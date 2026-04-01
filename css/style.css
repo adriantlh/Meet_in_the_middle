@@ -1,0 +1,340 @@
+/* --- GLOBAL STYLES --- */
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    height: 100%;
+    overflow: hidden; /* Prevents scrollbars on the body */
+}
+
+/* --- LAYOUT --- */
+
+/* Main control panel, formerly #sidebar */
+.control-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 350px;
+    height: 100%;
+    background-color: #f8f9fa;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto; /* Allows scrolling within the panel if content overflows */
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    z-index: 10;
+}
+
+/* Map container */
+#map {
+    position: absolute;
+    top: 0;
+    left: 350px; /* Width of the .control-panel */
+    width: calc(100% - 350px);
+    height: 100%;
+}
+
+/* --- TYPOGRAPHY & HEADINGS --- */
+h1 { 
+    color: #1a73e8; 
+    border-bottom: 2px solid #e0e0e0; 
+    padding-bottom: 10px; 
+    margin-top: 0;
+}
+
+h3 { 
+    color: #5f6368; 
+    margin-top: 25px; 
+    margin-bottom: 10px; 
+}
+
+/* --- SECTION & COMPONENT STYLING --- */
+
+/* Spacing for the main sections inside the control panel */
+.input-section, .list-section, .search-section {
+    margin-bottom: 25px;
+}
+
+/* Flex container for inputs and buttons */
+.input-group, .search-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* Style for the main address input */
+#address-input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Style for the search radius input */
+#search-radius {
+    width: 60px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Style for the POI type dropdown */
+#poi-type {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* --- BUTTON STYLING --- */
+button {
+    padding: 10px 15px;
+    border: none;
+    background-color: #1a73e8;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+}
+
+button:hover {
+    background-color: #155ab6;
+}
+
+/* Style for the list of added locations */
+#locations-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#locations-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background-color: #e8f0fe;
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+#locations-list li span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 10px;
+}
+
+/* Specific style for the small "Remove" button */
+.remove-btn {
+    background-color: #d93025;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    flex-shrink: 0; /* Prevents the button from shrinking */
+}
+
+.remove-btn:hover {
+    background-color: #b52b20;
+}
+
+/* --- STATUS & FEEDBACK --- */
+
+/* Container for the center coordinates display */
+#center-coords {
+    margin-top: 20px;
+    font-family: monospace;
+    background-color: #e0e0e0;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    word-break: break-all;
+}
+
+/* Status message display */
+#status-message {
+    margin-top: 10px;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#status-message.info { 
+    background-color: #c8e6c9; 
+    color: #2e7d32; 
+}
+
+#status-message.error { 
+    background-color: #ffcdd2; 
+    color: #c62828; 
+}
+
+/* Utility class to hide elements */
+.hidden { 
+    display: none; 
+}
+
+.location-item {
+    cursor: pointer;
+    flex-grow: 1; /* Allows the text to take up available space */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 10px;
+}
+
+.location-item:hover {
+    text-decoration: underline;
+}
+
+/* --- Add these new styles to the end of style.css --- */
+
+/* POI Details Panel */
+#poi-details-panel {
+    position: absolute;
+    bottom: 20px;
+    left: 370px; /* Sidebar width (350px) + margin (20px) */
+    width: 400px;
+    max-height: 350px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 15px;
+    box-sizing: border-box;
+    display: flex; /* Use flexbox for internal layout */
+    z-index: 5; /* Sits above the map */
+}
+
+#poi-list-container {
+    width: 45%;
+    border-right: 1px solid #e0e0e0;
+    padding-right: 15px;
+    overflow-y: auto; /* Add scrollbar if list is long */
+    max-height: 320px;
+}
+
+#poi-info-container {
+    width: 55%;
+    padding-left: 15px;
+    overflow-y: auto;
+    max-height: 320px;
+}
+
+#poi-list-container h4, #poi-info-container h4 {
+    margin-top: 0;
+    color: #202124;
+}
+
+#poi-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+#poi-list li {
+    padding: 10px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#poi-list li:hover {
+    background-color: #f1f3f4;
+}
+
+#poi-list li.active {
+    background-color: #e8f0fe;
+    font-weight: bold;
+    color: #1a73e8;
+}
+
+#poi-info-content p {
+    margin: 8px 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+#poi-info-content img {
+    width: 100%;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+/* --- Add these new styles to the end of style.css --- */
+
+/* POI Actions */
+#poi-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+#poi-actions button {
+    flex-grow: 1;
+    background-color: #1a73e8;
+    font-size: 14px;
+}
+
+#poi-actions button:hover {
+    background-color: #155ab6;
+}
+
+/* POI Info Content Styling */
+#poi-info-content p {
+    margin: 8px 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+#poi-info-content a {
+    color: #1a73e8;
+    text-decoration: none;
+}
+
+#poi-info-content a:hover {
+    text-decoration: underline;
+}
+
+/* Photo Gallery */
+#photo-gallery {
+    margin-top: 10px;
+}
+
+#main-photo {
+    width: 100%;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#photo-thumbnails {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+    overflow-x: auto; /* Allow horizontal scrolling for many thumbnails */
+}
+
+#photo-thumbnails img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+#photo-thumbnails img.active, #photo-thumbnails img:hover {
+    opacity: 1;
+    border: 2px solid #1a73e8;
+}
