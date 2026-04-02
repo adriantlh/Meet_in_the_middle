@@ -21,7 +21,7 @@ app.get('/', (req, res) => {
     res.send(html);
 });
 
-app.listen(port, () => {
-    console.log(`\n🚀 MeetWay running at http://localhost:${port}`);
-    console.log(`Using API Key: ${process.env.GOOGLE_MAPS_API_KEY ? '✅ Found in .env' : '❌ Not found, using placeholder'}\n`);
+app.listen(port, '0.0.0.0', () => {
+    console.log(`\n🚀 MeetWay running at http://0.0.0.0:${port}`);
+    console.log(`Using API Key: ${process.env.GOOGLE_MAPS_API_KEY ? '✅ Found in environment' : '❌ Not found'}\n`);
 });
