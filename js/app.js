@@ -1,5 +1,6 @@
 // --- GLOBAL STATE & CONFIGURATION ---
 let map, geocoder, infoWindow, autocomplete, distanceService;
+window.initMap = initMap; // Ensure it's globally available
 let locations = []; 
 let inputMarkers = [];
 let poiMarkers = [];
