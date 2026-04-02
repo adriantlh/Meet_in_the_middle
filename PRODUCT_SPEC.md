@@ -31,8 +31,11 @@ MeetWay is a web-based application designed to help users find a convenient meet
 
 ---
 
-## Technical Stack
-- **Frontend:** HTML5, CSS3 (Vanilla), JavaScript (ES6+).
-- **APIs:** Google Maps JavaScript API.
-  - Libraries: `places`, `marker`.
-  - Services: `Geocoder`, `Place.searchNearby`, `AdvancedMarkerElement`.
+## Deployment
+The application is configured for deployment on **Render.com** (via `render.yaml` and `server.js`). 
+
+### Deployment Steps:
+1. Push to GitHub.
+2. Connect the repository to a new Render Web Service.
+3. Add the `GOOGLE_MAPS_API_KEY` environment variable in the Render Dashboard.
+4. The application will automatically build and deploy.
