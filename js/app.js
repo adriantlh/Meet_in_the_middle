@@ -1,6 +1,5 @@
 // --- GLOBAL STATE & CONFIGURATION ---
 let map, geocoder, infoWindow, autocomplete, distanceService;
-window.initMap = initMap; // Ensure it's globally available
 let locations = []; 
 let inputMarkers = [];
 let poiMarkers = [];
@@ -11,11 +10,35 @@ let currentPoiDetails = null;
 
 const STORAGE_KEY = 'meetway_locations';
 
+// --- DYNAMIC LOADER ---
+// This is the modern way to load the Google Maps JS API.
+(async () => {
+    // 1. Get the API key injected by server.js (or fallback for local dev)
+    // We'll read it from a data attribute or a global variable if we want,
+    // but the easiest is to just let server.js replace it in the script loader.
+    
+    const loaderScript = document.createElement('script');
+    // server.js will replace %GOOGLE_MAPS_API_KEY% here
+    loaderScript.src = `https://maps.googleapis.com/maps/api/js?key=%GOOGLE_MAPS_API_KEY%&libraries=places,marker&v=beta`;
+    loaderScript.async = true;
+    loaderScript.defer = true;
+    
+    loaderScript.onload = () => {
+        initMap();
+    };
+    
+    document.head.appendChild(loaderScript);
+})();
+
 // --- INITIALIZATION ---
-function initMap() {
-    map = new google.maps.Map(document.getElementById("map"), {
+async function initMap() {
+    // Import libraries using the new Maps SDK pattern
+    const { Map } = await google.maps.importLibrary("maps");
+    const { Geocoder } = await google.maps.importLibrary("geocoding");
+    
+    map = new Map(document.getElementById("map"), {
         zoom: 4,
-        center: { lat: 39.8283, lng: -98.5795 },
+        center: { lat: 1.3521, lng: 103.8198 }, // Default to Singapore for your context
         mapId: 'DEMO_MAP_ID',
         disableDefaultUI: false,
         zoomControl: true,
@@ -23,7 +46,8 @@ function initMap() {
         mapTypeControl: false,
         fullscreenControl: false
     });
-    geocoder = new google.maps.Geocoder();
+    
+    geocoder = new Geocoder();
     infoWindow = new google.maps.InfoWindow();
     distanceService = new google.maps.DistanceMatrixService();
 
