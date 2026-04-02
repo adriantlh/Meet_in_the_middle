@@ -12,13 +12,18 @@ app.use('/js', express.static(path.join(__dirname, 'js')));
 
 // Serve index.html with API key replacement
 app.get('/', (req, res) => {
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE';
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    
+    if (!apiKey) {
+        console.error('❌ DEPLOYMENT ERROR: GOOGLE_MAPS_API_KEY environment variable is missing!');
+    }
+
     let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
     
-    // Replace the placeholder with the actual API key from .env
-    html = html.replace('%GOOGLE_MAPS_API_KEY%', apiKey);
+    // Global replace in case of multiple script tags or metadata
+    const finalHtml = html.replace(/%GOOGLE_MAPS_API_KEY%/g, apiKey || 'MISSING_API_KEY');
     
-    res.send(html);
+    res.send(finalHtml);
 });
 
 app.listen(port, '0.0.0.0', () => {
