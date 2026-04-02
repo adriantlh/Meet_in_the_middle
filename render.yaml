@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: meetway
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false # You will set this in the Render Dashboard
+      - key: NODE_ENV
+        value: production
