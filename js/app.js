@@ -409,6 +409,13 @@ function updateUI() {
     });
 }
 
+function showHowItWorks() {
+    const message = "MeetWay calculates the geographic center between all participants, " +
+                    "then searches for nearby points of interest. We calculate a 'Fairness Score' " +
+                    "based on the difference in travel times to ensure a balanced meeting spot.";
+    showStatus(message, 'info');
+}
+
 let statusTimeout;
 function showStatus(message, type) {
     const el = document.getElementById('status-message');
@@ -442,8 +449,9 @@ function clearPois() {
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('directions-btn').addEventListener('click', () => {
-        if (!currentPoiDetails) return;
-        const url = `https://www.google.com/maps/dir/?api=1&origin=${locations[0].lat},${locations[0].lng}&destination=place_id:${currentPoiDetails.id}`;
+        if (!currentPoiDetails || locations.length === 0) return;
+        const name = currentPoiDetails.displayName ? (typeof currentPoiDetails.displayName === 'string' ? currentPoiDetails.displayName : currentPoiDetails.displayName.text) : 'Location';
+        const url = `https://www.google.com/maps/dir/?api=1&origin=${locations[0].lat},${locations[0].lng}&destination=${encodeURIComponent(name)}&destination_place_id=${currentPoiDetails.id}`;
         window.open(url, '_blank');
     });
     document.getElementById('streetview-btn').addEventListener('click', () => {
