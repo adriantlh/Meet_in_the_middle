@@ -74,7 +74,8 @@
         <div id="poi-list-container">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="margin: 0; font-size: 18px;">Found Locations</h2>
-                <button class="remove-btn" onclick="document.getElementById('poi-details-panel').classList.remove('visible')" title="Close">✕</button>
+                <button class="remove-btn desktop-only" onclick="document.getElementById('poi-details-panel').classList.remove('visible')" title="Close">✕</button>
+                <button class="secondary mobile-only" style="display: none; padding: 6px 12px; font-size: 12px;" onclick="document.getElementById('poi-details-panel').classList.remove('visible')">Back to Map</button>
             </div>
             <div id="poi-list"></div>
         </div>

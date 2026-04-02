@@ -417,6 +417,10 @@ button.secondary:hover {
 .fairness-good { background: #e6f4ea; color: #1e8e3e; border: 1px solid #ceead6; }
 .fairness-warning { background: #fef7e0; color: #b06000; border: 1px solid #feefc3; }
 
+.hidden { display: none !important; }
+.mobile-only { display: none; }
+.desktop-only { display: block; }
+
 /* Status Bar */
 #status-message {
     position: fixed;
@@ -436,23 +440,37 @@ button.secondary:hover {
 
 /* --- MOBILE --- */
 @media (max-width: 768px) {
+    .app-header {
+        height: 56px;
+        padding: 0 16px;
+    }
+
     .control-panel {
         top: auto;
         left: 0;
         right: 0;
         bottom: 0;
         width: 100%;
-        height: 50%;
+        height: 40%;
         border-radius: var(--radius) var(--radius) 0 0;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
     }
 
     #poi-details-panel {
-        top: 0;
+        top: auto;
         left: 0;
         right: 0;
         bottom: 0;
         width: 100%;
-        height: 100%;
-        border-radius: 0;
+        height: 60%;
+        border-radius: var(--radius) var(--radius) 0 0;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
     }
+
+    #poi-info-view {
+        border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    .mobile-only { display: block !important; }
+    .desktop-only { display: none !important; }
 }

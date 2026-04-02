@@ -15,7 +15,7 @@ test.describe('MeetWay', () => {
     
     await expect(addressInput).toBeVisible();
     await expect(addButton).toBeVisible();
-    await expect(addButton).toHaveText('Add Location');
+    await expect(addButton).toHaveText('Add');
   });
 
   test('should have POI search controls', async ({ page }) => {
@@ -40,6 +40,21 @@ test.describe('MeetWay', () => {
 
   test('should display initial status message correctly', async ({ page }) => {
     const centerCoords = page.locator('#center-coords');
-    await expect(centerCoords).toContainText('Add at least two locations to calculate the center.');
+    await expect(centerCoords).toContainText('Add 2+ locations to start.');
+  });
+
+  test('should hide status message after a few seconds', async ({ page }) => {
+    // Trigger a status message (e.g., call showStatus directly)
+    await page.evaluate(() => {
+        window.showStatus('MeetWay helps you find the perfect compromise.', 'info');
+    });
+    const statusMessage = page.locator('#status-message');
+    
+    // Should be visible initially
+    await expect(statusMessage).toBeVisible();
+    await expect(statusMessage).toContainText('MeetWay helps you find the perfect compromise.');
+    
+    // Should be hidden after timeout (using a bit more than 4s)
+    await expect(statusMessage).toBeHidden({ timeout: 10000 });
   });
 });

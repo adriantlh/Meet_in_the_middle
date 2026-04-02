@@ -326,12 +326,12 @@ function updateFairness(durations) {
     const min = Math.min(...durations);
     const diffMin = (max - min) / 60; // difference in minutes
 
-    fairnessEl.classList.remove('hidden');
+    fairnessEl.classList.remove('hidden', 'fairness-good', 'fairness-warning');
     if (diffMin < 10) {
-        fairnessEl.className = 'fairness-good';
+        fairnessEl.classList.add('fairness-good');
         fairnessEl.innerHTML = '⚖️ <strong>Very Fair:</strong> Travel times are balanced within 10 mins.';
     } else {
-        fairnessEl.className = 'fairness-warning';
+        fairnessEl.classList.add('fairness-warning');
         fairnessEl.innerHTML = `⚖️ <strong>Unbalanced:</strong> ${Math.round(diffMin)} min difference between participants.`;
     }
 }
@@ -409,12 +409,20 @@ function updateUI() {
     });
 }
 
+let statusTimeout;
 function showStatus(message, type) {
     const el = document.getElementById('status-message');
     el.textContent = message;
-    el.className = type || '';
-    el.classList.remove('hidden');
-    setTimeout(() => el.classList.add('hidden'), 4000);
+    
+    // Clear previous types and the hidden class
+    el.classList.remove('hidden', 'info', 'error');
+    if (type) el.classList.add(type);
+    
+    // Reset timer
+    if (statusTimeout) clearTimeout(statusTimeout);
+    statusTimeout = setTimeout(() => {
+        el.classList.add('hidden');
+    }, 4000);
 }
 
 function clearMarkers() {
@@ -429,6 +437,7 @@ function clearPois() {
     foundPois = [];
     document.getElementById('poi-details-panel').classList.remove('visible');
     document.getElementById('poi-info-view').classList.remove('open');
+    document.getElementById('fairness-score').classList.add('hidden');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
