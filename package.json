@@ -1,0 +1,30 @@
+{
+  "name": "meet_in_the_middle",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "npx playwright test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adriantlh/Meet_in_the_middle.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/adriantlh/Meet_in_the_middle/issues"
+  },
+  "homepage": "https://github.com/adriantlh/Meet_in_the_middle#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "http-server": "^14.1.1"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.0",
+    "express": "^5.2.1"
+  }
+}

@@ -3,71 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geographic Center Finder</title>
+    <title>MeetWay</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="control-panel">
-        <h1>Geographic Center Finder</h1>
-        
-        <div class="input-section">
-            <input type="text" id="address-input" placeholder="Enter an address (e.g., New York, NY)">
-            <button id="add-location-btn">Add Location</button>
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">📍</span>
+                <span class="logo-text">MeetWay</span>
+            </div>
+            <nav class="header-nav">
+                <a href="#" onclick="showStatus('MeetWay helps you find the perfect compromise.', 'info')">How it works</a>
+                <a href="https://github.com/adriantlh/Meet_in_the_middle" target="_blank">GitHub</a>
+            </nav>
         </div>
+    </header>
 
-        <div class="list-section">
-            <h3>Locations:</h3>
+    <div class="control-panel">
+        <h1>MeetWay</h1>
+        
+        <div class="card-section">
+            <h3>Participants</h3>
+            <div class="input-group">
+                <input type="text" id="address-input" placeholder="Enter an address...">
+                <button id="add-location-btn">Add</button>
+            </div>
             <ul id="locations-list"></ul>
         </div>
 
-        <div class="search-section">
+        <div class="card-section">
             <h3>Find Point of Interest</h3>
-            <div class="search-controls">
+            <div class="input-group">
                 <select id="poi-type">
                     <option value="restaurant">Restaurant</option>
                     <option value="tourist_attraction">Tourist Attraction</option>
                     <option value="gas_station">Gas Station</option>
                     <option value="park">Park</option>
+                    <option value="cafe">Cafe</option>
                 </select>
-                <label for="search-radius">Radius (km):</label>
-                <input type="number" id="search-radius" value="1" min="1" max="500">
+                <input type="number" id="search-radius" value="1" min="1" max="50" style="width: 80px;">
+                <span style="font-size: 12px; color: var(--text-sub); align-self: center;">km</span>
             </div>
-            <button id="search-poi-btn">Search Near Center</button>
+            <button id="search-poi-btn" style="width: 100%;">Search Near Center</button>
         </div>
 
-        <div id="center-coords">Add at least two locations to calculate the center.</div>
+        <div class="card-section" style="background: white;">
+            <div id="center-coords" style="font-size: 13px; color: var(--text-sub);">Add 2+ locations to start.</div>
+            <div id="fairness-score" class="hidden"></div>
+        </div>
+
+        <button id="share-btn">Share Meetup Plan</button>
         <div id="status-message" class="hidden"></div>
+
+        <footer class="sidebar-footer">
+            <p>&copy; 2026 MeetWay. Built with Google Maps Platform.</p>
+            <div class="footer-links">
+                <a href="#">Privacy</a> • <a href="#">Terms</a>
+            </div>
+        </footer>
     </div>
 
     <div id="map"></div>
 
-        <!-- POI Details Panel -->
-    <div id="poi-details-panel" class="hidden">
+    <!-- Right-side POI Drawer -->
+    <div id="poi-details-panel">
         <div id="poi-list-container">
-            <h4>Found Locations</h4>
-            <ul id="poi-list"></ul>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 18px;">Found Locations</h2>
+                <button class="remove-btn" onclick="document.getElementById('poi-details-panel').classList.remove('visible')" title="Close">✕</button>
+            </div>
+            <div id="poi-list"></div>
         </div>
-     <!-- REPLACE the existing #poi-info-container with this -->
 
-<div id="poi-info-container">
-    <h4 id="poi-info-name">Select a location</h4>
-    <div id="poi-info-content">
-        <!-- This content will be dynamically generated -->
-    </div>
-    <!-- NEW: Action Buttons Container -->
-    <div id="poi-actions" class="hidden">
-        <button id="directions-btn">Get Directions</button>
-        <button id="streetview-btn">View on Street View</button>
-    </div>
-</div>
+        <!-- Detail View (Layered inside drawer) -->
+        <div id="poi-info-view">
+            <div class="drawer-header">
+                <button class="back-btn" onclick="document.getElementById('poi-info-view').classList.remove('open')" title="Back">←</button>
+                <h4 id="poi-info-name" style="margin: 0; font-size: 16px;">Details</h4>
+            </div>
+            <div class="drawer-content">
+                <div id="poi-info-content"></div>
+                <div id="poi-actions" style="display: flex; gap: 10px; margin-top: 24px;">
+                    <button id="directions-btn" style="flex: 1;">Directions</button>
+                    <button id="streetview-btn" class="secondary" style="flex: 1;">Street View</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- 
-        IMPORTANT: Replace YOUR_API_KEY with your actual Google Maps API key.
-        The 'marker' library is required for the new AdvancedMarkerElement.
-    -->
     <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=_API_KEY_HERE_&libraries=places,marker&callback=initMap">
+        src="https://maps.googleapis.com/maps/api/js?key=%GOOGLE_MAPS_API_KEY%&libraries=places,marker&callback=initMap">
     </script>
     <script src="js/app.js"></script>
 </body>
