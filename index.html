@@ -10,15 +10,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <script>
+        // Apply theme immediately to prevent flicker
+        if (localStorage.getItem('meetway_theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
     <header class="app-header">
         <div class="header-content">
             <div class="logo">
                 <span class="logo-icon">📍</span>
                 <span class="logo-text">MeetWay</span>
             </div>
-            <nav class="header-nav">
-                <a href="#" onclick="showHowItWorks()">How it works</a>
-            </nav>
+            <div class="header-actions">
+                <nav class="header-nav">
+                    <a href="#" onclick="showHowItWorks()">How it works</a>
+                </nav>
+                <button id="theme-toggle" class="theme-toggle" title="Toggle Theme">🌓</button>
+            </div>
         </div>
     </header>
 
@@ -26,9 +35,21 @@
         <h1>MeetWay</h1>
         
         <div class="card-section">
-            <h3>Participants</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0;">Participants</h3>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 11px; color: var(--text-sub);">Travel Mode:</span>
+                    <select id="travel-mode" style="padding: 4px 8px; width: auto; font-size: 11px;">
+                        <option value="DRIVING">🚗 Driving</option>
+                        <option value="WALKING">🚶 Walking</option>
+                        <option value="BICYCLING">🚲 Biking</option>
+                        <option value="TRANSIT">🚆 Transit</option>
+                    </select>
+                </div>
+            </div>
             <div class="input-group">
-                <input type="text" id="address-input" placeholder="Enter an address...">
+                <input type="text" id="address-input" placeholder="Enter an address..." style="flex: 1; min-width: 0;">
+                <button id="current-location-btn" class="icon-btn" title="Use my current location">🎯</button>
                 <button id="add-location-btn">Add</button>
             </div>
             <ul id="locations-list"></ul>
@@ -38,14 +59,21 @@
             <h3>Find Point of Interest</h3>
             <div class="input-group">
                 <select id="poi-type">
-                    <option value="restaurant">Restaurant</option>
-                    <option value="tourist_attraction">Tourist Attraction</option>
-                    <option value="gas_station">Gas Station</option>
-                    <option value="park">Park</option>
-                    <option value="cafe">Cafe</option>
+                    <option value="restaurant">🍴 Restaurant</option>
+                    <option value="cafe">☕ Cafe</option>
+                    <option value="bar">🍺 Bar</option>
+                    <option value="park">🌳 Park</option>
+                    <option value="tourist_attraction">🎡 Attraction</option>
+                    <option value="library">📚 Library</option>
+                    <option value="gym">💪 Gym</option>
+                    <option value="movie_theater">🎬 Cinema</option>
+                    <option value="custom">🔍 Custom Search...</option>
                 </select>
                 <input type="number" id="search-radius" value="1" min="1" max="50" style="width: 80px;">
                 <span style="font-size: 12px; color: var(--text-sub); align-self: center;">km</span>
+            </div>
+            <div id="custom-poi-container" class="hidden" style="margin-bottom: 12px;">
+                <input type="text" id="custom-poi-query" placeholder="What are you looking for? (e.g. Sushi, Pizza)">
             </div>
             <button id="search-poi-btn" style="width: 100%;">Search Near Center</button>
         </div>

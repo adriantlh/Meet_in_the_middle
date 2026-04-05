@@ -6,28 +6,30 @@ MeetWay is a web-based application designed to help users find a convenient meet
 ## Key Features
 
 ### 1. Multi-Location Input
-- **Address Geocoding:** Users can enter addresses or place names in a search bar. The application uses the Google Maps Geocoding API to convert these into geographic coordinates.
+- **Address Entry & Geocoding:** Users can enter addresses or place names via Google Maps Autocomplete or direct text entry. Direct entry uses a smart geocoding fallback to ensure any valid address is found.
+- **Current Location:** A dedicated "Use My Location" (🎯) button allows users to quickly add their current GPS coordinates as a starting point.
 - **Location Management:** Added locations are displayed in a list. Users can remove individual locations, which triggers an immediate recalculation of the center.
-- **Visual Feedback:** Each added location is marked on the map with a blue pin.
+- **Visual Feedback:** Each added location is marked on the map with a person icon marker.
 
-### 2. Geographic Center Calculation
+### 2. Geographic Center & Travel Flexibility
 - **Centroid Logic:** The app calculates the average latitude and longitude (geographic center) of all active locations.
-- **Visual Representation:** The center is marked on the map with a distinct red pin and a semi-transparent red circle representing the search radius.
-- **Coordinate Display:** The exact latitude and longitude of the center are displayed in the control panel.
+- **Travel Modes:** Users can select between **Driving, Walking, Bicycling, or Transit** modes. These choices directly affect the travel time calculations and the fairness score.
+- **Visual Representation:** The center is marked on the map with a distinct target icon and a semi-transparent blue circle representing the search radius.
 
 ### 3. Point of Interest (POI) Discovery
-- **Configurable Search:** Users can select a category (Restaurant, Tourist Attraction, Gas Station, Park) and define a search radius (1km to 500km).
-- **Nearby Search:** The app uses the Google Places API to find relevant businesses or locations within the specified radius of the calculated center.
-- **Interactive Map Pins:** Found POIs are displayed as green pins on the map.
+- **Configurable Search:** Users can select from presets (Restaurant, Cafe, Bar, Park, Attraction, Library, Gym, Cinema) or use **Custom Search** to find specific venues (e.g., "Sushi").
+- **Nearby Search:** The app uses the Google Places API (including `searchNearby` and `searchByText`) to find relevant locations within the specified radius of the calculated center.
+- **Interactive Map Pins:** Found POIs are displayed as pins on the map.
 
-### 4. Rich POI Details
+### 4. Rich POI Details & Fairness Visuals
 - **Selection:** Users can click on a map pin or a list item in the results panel to view details.
+- **Fairness Labels:** Travel times from all participants are listed, with the **Fastest** and **Slowest** routes clearly labeled to highlight potential imbalances.
 - **Comprehensive Info:** Displays ratings, review counts, phone numbers, and website links.
-- **Photo Gallery:** Shows a primary photo of the venue with a thumbnail gallery for additional images.
 
-### 5. Actionable Outcomes
-- **Directions:** A "Get Directions" button opens Google Maps in a new tab, providing a route from the first user-inputted location to the selected POI.
-- **Street View:** Users can launch a Street View window for the selected POI to virtually explore the surroundings.
+### 5. Personalization & Sharing
+- **Dark Mode:** A theme toggle allows users to switch between light and dark themes, with preferences persisted locally.
+- **Directions & Street View:** Interactive buttons open Google Maps for turn-by-turn directions (respecting the chosen travel mode) or launch a Street View exploration.
+- **Shareable URLs:** Users can generate a unique link that encodes their current meetup plan (locations and search settings) for easy sharing.
 
 ---
 

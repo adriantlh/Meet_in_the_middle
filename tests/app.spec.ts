@@ -27,6 +27,30 @@ test.describe('MeetWay', () => {
     await expect(searchButton).toHaveText('Search Near Center');
   });
 
+  test('should have travel mode selection', async ({ page }) => {
+    const travelMode = page.locator('#travel-mode');
+    await expect(travelMode).toBeVisible();
+    await expect(travelMode).toHaveValue('DRIVING');
+  });
+
+  test('should have a theme toggle', async ({ page }) => {
+    const themeToggle = page.locator('#theme-toggle');
+    await expect(themeToggle).toBeVisible();
+    
+    // Toggle to dark mode
+    await themeToggle.click();
+    await expect(page.locator('body')).toHaveClass(/dark-mode/);
+    
+    // Toggle back to light mode
+    await themeToggle.click();
+    await expect(page.locator('body')).not.toHaveClass(/dark-mode/);
+  });
+
+  test('should have a current location button', async ({ page }) => {
+    const currentLocBtn = page.locator('#current-location-btn');
+    await expect(currentLocBtn).toBeVisible();
+  });
+
   test('should have a map container', async ({ page }) => {
     const map = page.locator('#map');
     await expect(map).toBeVisible();

@@ -1,5 +1,5 @@
 // --- GLOBAL STATE & CONFIGURATION ---
-let map, geocoder, infoWindow, autocomplete, distanceService;
+let map, geocoder, infoWindow, autocomplete, distanceService, placeAutocomplete;
 let locations = []; 
 let inputMarkers = [];
 let poiMarkers = [];
@@ -35,6 +35,8 @@ async function initMap() {
     // Import libraries using the new Maps SDK pattern
     const { Map } = await google.maps.importLibrary("maps");
     const { Geocoder } = await google.maps.importLibrary("geocoding");
+    // PlaceAutocompleteElement is part of the 'places' library
+    await google.maps.importLibrary("places");
     
     map = new Map(document.getElementById("map"), {
         zoom: 4,
@@ -52,29 +54,58 @@ async function initMap() {
     distanceService = new google.maps.DistanceMatrixService();
 
     const addressInput = document.getElementById('address-input');
-    autocomplete = new google.maps.places.Autocomplete(addressInput, {
+    
+    // Stable Autocomplete for standard input
+    const { Autocomplete } = await google.maps.importLibrary("places");
+    autocomplete = new Autocomplete(addressInput, {
         fields: ['formatted_address', 'geometry', 'name'],
         types: ['geocode', 'establishment']
     });
 
+    // Handle place selection from dropdown
     autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
         if (place.geometry) {
-            addLocationFromPlace(place);
+            locations.push({
+                name: place.formatted_address || place.name,
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng()
+            });
             addressInput.value = '';
+            saveToStorage();
+            updateUI();
+            recalculateAndRedraw();
+            showStatus(`Added participant location`, 'info');
         }
     });
 
     document.getElementById('add-location-btn').addEventListener('click', handleAddLocation);
+    document.getElementById('current-location-btn').addEventListener('click', handleCurrentLocation);
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
     document.getElementById('search-poi-btn').addEventListener('click', handleSearchPois);
     document.getElementById('share-btn').addEventListener('click', handleShareMeetup);
     
+    // Toggle custom query input
+    document.getElementById('poi-type').addEventListener('change', (e) => {
+        const customContainer = document.getElementById('custom-poi-container');
+        if (e.target.value === 'custom') {
+            customContainer.classList.remove('hidden');
+        } else {
+            customContainer.classList.add('hidden');
+        }
+    });
+
     // Update circle in real-time when radius changes
     document.getElementById('search-radius').addEventListener('input', recalculateAndRedraw);
     
     addressInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleAddLocation();
     });
+
+    // Initial theme check
+    if (localStorage.getItem('meetway_theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
 
     // Load from URL or Local Storage
     const urlParams = new URLSearchParams(window.location.search);
@@ -94,6 +125,12 @@ async function initMap() {
 }
 
 // --- PERSISTENCE & SHARING ---
+function toggleTheme() {
+    const isDark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('meetway_theme', isDark ? 'dark' : 'light');
+    showStatus(`${isDark ? 'Dark' : 'Light'} mode enabled`, 'info');
+}
+
 function saveToStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
 }
@@ -126,24 +163,53 @@ function handleShareMeetup() {
 }
 
 // --- EVENT HANDLERS ---
-function addLocationFromPlace(place) {
-    const location = place.geometry.location;
-    locations.push({
-        name: place.formatted_address || place.name,
-        lat: location.lat(),
-        lng: location.lng()
-    });
-    saveToStorage();
-    updateUI();
-    recalculateAndRedraw();
-    showStatus(`Added participant location`, 'info');
+function handleCurrentLocation() {
+    if (!navigator.geolocation) {
+        showStatus('Geolocation is not supported by your browser.', 'error');
+        return;
+    }
+
+    showStatus('Getting your location...', 'info');
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                if (status === 'OK' && results[0]) {
+                    locations.push({
+                        name: results[0].formatted_address,
+                        lat: lat,
+                        lng: lng
+                    });
+                    saveToStorage();
+                    updateUI();
+                    recalculateAndRedraw();
+                    showStatus('Current location added!', 'info');
+                } else {
+                    // Fallback to coordinates if geocoding fails
+                    locations.push({
+                        name: `My Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+                        lat: lat,
+                        lng: lng
+                    });
+                    saveToStorage();
+                    updateUI();
+                    recalculateAndRedraw();
+                }
+            });
+        },
+        (error) => {
+            showStatus(`Location error: ${error.message}`, 'error');
+        }
+    );
 }
 
 function handleAddLocation() {
     const addressInput = document.getElementById('address-input');
     const address = addressInput.value.trim();
     if (!address) return;
-    
+
     showStatus('Finding address...', 'info');
     geocoder.geocode({ address: address }, (results, status) => {
         if (status === 'OK') {
@@ -157,12 +223,12 @@ function handleAddLocation() {
             saveToStorage();
             updateUI();
             recalculateAndRedraw();
+            showStatus('Location added!', 'info');
         } else {
-            showStatus(`Geocode failed: ${status}`, 'error');
+            showStatus(`Location not found: ${status}`, 'error');
         }
     });
 }
-
 function handleRemoveLocation(index) {
     locations.splice(index, 1);
     saveToStorage();
@@ -177,21 +243,39 @@ async function handleSearchPois() {
     }
     clearPois();
     const center = calculateGeographicCenter(locations);
-    const type = document.getElementById('poi-type').value;
+    const poiType = document.getElementById('poi-type').value;
+    const customQuery = document.getElementById('custom-poi-query').value.trim();
     const radiusKm = parseInt(document.getElementById('search-radius').value, 10);
     const radiusM = radiusKm * 1000;
 
-    showStatus(`Searching for ${type}s...`, 'info');
-
     const { Place } = await google.maps.importLibrary("places");
-    const request = {
-        fields: ['displayName', 'location', 'rating', 'userRatingCount', 'priceLevel'],
-        locationRestriction: { center: center, radius: radiusM },
-        includedPrimaryTypes: [type],
-        maxResultCount: 20,
-    };
+    let places = [];
 
-    const { places } = await Place.searchNearby(request);
+    if (poiType === 'custom') {
+        if (!customQuery) {
+            showStatus('Please enter a search term.', 'error');
+            return;
+        }
+        showStatus(`Searching for "${customQuery}"...`, 'info');
+        const request = {
+            fields: ['displayName', 'location', 'rating', 'userRatingCount', 'priceLevel'],
+            textQuery: customQuery,
+            locationBias: { center: center, radius: radiusM },
+            maxResultCount: 20,
+        };
+        const result = await Place.searchByText(request);
+        places = result.places;
+    } else {
+        showStatus(`Searching for ${poiType}s...`, 'info');
+        const request = {
+            fields: ['displayName', 'location', 'rating', 'userRatingCount', 'priceLevel'],
+            locationRestriction: { center: center, radius: radiusM },
+            includedPrimaryTypes: [poiType],
+            maxResultCount: 20,
+        };
+        const result = await Place.searchNearby(request);
+        places = result.places;
+    }
 
     if (places && places.length > 0) {
         foundPois = places;
@@ -291,33 +375,56 @@ async function showPoiDetails(index) {
 }
 
 function calculateDistances(destination) {
+    const mode = document.getElementById('travel-mode').value;
     distanceService.getDistanceMatrix({
         origins: locations.map(l => ({ lat: l.lat, lng: l.lng })),
         destinations: [destination],
-        travelMode: google.maps.TravelMode.DRIVING,
+        travelMode: google.maps.TravelMode[mode],
     }, (response, status) => {
         const resultsEl = document.getElementById('distance-matrix-results');
         if (status === 'OK') {
-            let html = '<ul style="list-style: none; padding: 0; margin: 0;">';
+            let results = [];
             let durations = [];
-            
+
             response.rows.forEach((row, i) => {
                 const el = row.elements[0];
                 if (el.status === 'OK') {
                     durations.push(el.duration.value);
-                    html += `<li style="margin-bottom: 6px;">
-                        <span style="color: var(--text-sub);">${locations[i].name.split(',')[0]}:</span> 
-                        <strong>${el.duration.text}</strong>
-                    </li>`;
+                    results.push({
+                        name: locations[i].name.split(',')[0],
+                        durationText: el.duration.text,
+                        durationValue: el.duration.value
+                    });
                 }
             });
-            html += '</ul>';
-            resultsEl.innerHTML = html;
-            updateFairness(durations);
+
+            if (durations.length > 0) {
+                const minDuration = Math.min(...durations);
+                const maxDuration = Math.max(...durations);
+
+                let html = '<ul style="list-style: none; padding: 0; margin: 0;">';
+                results.forEach(res => {
+                    let label = '';
+                    if (durations.length > 1) {
+                        if (res.durationValue === minDuration) label = '<span class="time-label time-fastest">Fastest</span>';
+                        else if (res.durationValue === maxDuration) label = '<span class="time-label time-slowest">Slowest</span>';
+                    }
+
+                    html += `<li style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--text-sub);">${res.name}:</span>
+                        <div>
+                            <strong style="color: var(--text-main);">${res.durationText}</strong>
+                            ${label}
+                        </div>
+                    </li>`;
+                });
+                html += '</ul>';
+                resultsEl.innerHTML = html;
+                updateFairness(durations);
+            }
         }
     });
 }
-
 function updateFairness(durations) {
     const fairnessEl = document.getElementById('fairness-score');
     if (durations.length < 2) return;
@@ -451,7 +558,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('directions-btn').addEventListener('click', () => {
         if (!currentPoiDetails || locations.length === 0) return;
         const name = currentPoiDetails.displayName ? (typeof currentPoiDetails.displayName === 'string' ? currentPoiDetails.displayName : currentPoiDetails.displayName.text) : 'Location';
-        const url = `https://www.google.com/maps/dir/?api=1&origin=${locations[0].lat},${locations[0].lng}&destination=${encodeURIComponent(name)}&destination_place_id=${currentPoiDetails.id}`;
+        const mode = document.getElementById('travel-mode').value.toLowerCase();
+        const url = `https://www.google.com/maps/dir/?api=1&origin=${locations[0].lat},${locations[0].lng}&destination=${encodeURIComponent(name)}&destination_place_id=${currentPoiDetails.id}&travelmode=${mode}`;
         window.open(url, '_blank');
     });
     document.getElementById('streetview-btn').addEventListener('click', () => {
