@@ -236,11 +236,21 @@ function handleRemoveLocation(index) {
     recalculateAndRedraw();
 }
 
+let isSearching = false;
 async function handleSearchPois() {
+    if (isSearching) return;
     if (locations.length < 2) {
         showStatus('Add at least two participants first.', 'error');
         return;
     }
+
+    const searchBtn = document.getElementById('search-poi-btn');
+    const originalBtnText = searchBtn.textContent;
+    
+    isSearching = true;
+    searchBtn.disabled = true;
+    searchBtn.textContent = 'Searching...';
+
     clearPois();
     const center = calculateGeographicCenter(locations);
     const poiType = document.getElementById('poi-type').value;
@@ -248,58 +258,72 @@ async function handleSearchPois() {
     const radiusKm = parseInt(document.getElementById('search-radius').value, 10);
     const radiusM = radiusKm * 1000;
 
-    const { Place } = await google.maps.importLibrary("places");
-    let places = [];
+    try {
+        const { Place } = await google.maps.importLibrary("places");
+        let places = [];
 
-    if (poiType === 'custom') {
-        if (!customQuery) {
-            showStatus('Please enter a search term.', 'error');
-            return;
+        if (poiType === 'custom') {
+            if (!customQuery) {
+                showStatus('Please enter a search term.', 'error');
+                resetSearchState();
+                return;
+            }
+            showStatus(`Searching for "${customQuery}"...`, 'info');
+            const request = {
+                fields: ['displayName', 'location', 'rating', 'userRatingCount', 'priceLevel'],
+                textQuery: customQuery,
+                locationBias: { center: center, radius: radiusM },
+                maxResultCount: 20,
+            };
+            const result = await Place.searchByText(request);
+            places = result.places;
+        } else {
+            showStatus(`Searching for ${poiType}s...`, 'info');
+            const request = {
+                fields: ['displayName', 'location', 'rating', 'userRatingCount', 'priceLevel'],
+                locationRestriction: { center: center, radius: radiusM },
+                includedPrimaryTypes: [poiType],
+                maxResultCount: 20,
+            };
+            const result = await Place.searchNearby(request);
+            places = result.places;
         }
-        showStatus(`Searching for "${customQuery}"...`, 'info');
-        const request = {
-            fields: ['displayName', 'location', 'rating', 'userRatingCount', 'priceLevel'],
-            textQuery: customQuery,
-            locationBias: { center: center, radius: radiusM },
-            maxResultCount: 20,
-        };
-        const result = await Place.searchByText(request);
-        places = result.places;
-    } else {
-        showStatus(`Searching for ${poiType}s...`, 'info');
-        const request = {
-            fields: ['displayName', 'location', 'rating', 'userRatingCount', 'priceLevel'],
-            locationRestriction: { center: center, radius: radiusM },
-            includedPrimaryTypes: [poiType],
-            maxResultCount: 20,
-        };
-        const result = await Place.searchNearby(request);
-        places = result.places;
+
+        if (places && places.length > 0) {
+            foundPois = places;
+            foundPois.forEach((place, index) => {
+                const marker = new google.maps.marker.AdvancedMarkerElement({
+                    map: map,
+                    position: place.location,
+                    title: place.displayName ? (typeof place.displayName === 'string' ? place.displayName : place.displayName.text) : 'Location',
+                });
+                
+                // Custom Marker Style
+                const icon = document.createElement('div');
+                icon.innerHTML = '📍';
+                icon.style.fontSize = '24px';
+                icon.style.filter = 'drop-shadow(0 2px 2px rgba(0,0,0,0.3))';
+                marker.content = icon;
+
+                marker.addListener('click', () => showPoiDetails(index));
+                poiMarkers.push(marker);
+            });
+            updatePoiList();
+            document.getElementById('poi-details-panel').classList.add('visible');
+        } else {
+            showStatus(`No results found in this area.`, 'info');
+        }
+    } catch (error) {
+        console.error('Search error:', error);
+        showStatus('Search failed. Please try again.', 'error');
+    } finally {
+        resetSearchState();
     }
 
-    if (places && places.length > 0) {
-        foundPois = places;
-        foundPois.forEach((place, index) => {
-            const marker = new google.maps.marker.AdvancedMarkerElement({
-                map: map,
-                position: place.location,
-                title: place.displayName ? (typeof place.displayName === 'string' ? place.displayName : place.displayName.text) : 'Location',
-            });
-            
-            // Custom Marker Style
-            const icon = document.createElement('div');
-            icon.innerHTML = '📍';
-            icon.style.fontSize = '24px';
-            icon.style.filter = 'drop-shadow(0 2px 2px rgba(0,0,0,0.3))';
-            marker.content = icon;
-
-            marker.addListener('click', () => showPoiDetails(index));
-            poiMarkers.push(marker);
-        });
-        updatePoiList();
-        document.getElementById('poi-details-panel').classList.add('visible');
-    } else {
-        showStatus(`No ${type}s found in this area.`, 'info');
+    function resetSearchState() {
+        isSearching = false;
+        searchBtn.disabled = false;
+        searchBtn.textContent = originalBtnText;
     }
 }
 
@@ -312,13 +336,13 @@ function updatePoiList() {
         
         const div = document.createElement('div');
         div.className = 'poi-item';
-        div.innerHTML = `
+        div.innerHTML = DOMPurify.sanitize(`
             <div>
                 <div class="poi-item-name">${name}</div>
                 <div class="poi-item-meta">${rating} • Click for details</div>
             </div>
             <div style="font-size: 20px; color: var(--primary);">→</div>
-        `;
+        `);
         div.onclick = () => showPoiDetails(index);
         list.appendChild(div);
     });
@@ -362,7 +386,7 @@ async function showPoiDetails(index) {
             contentHTML += `<p><strong>Website:</strong> <a href="${place.websiteURI}" target="_blank">Visit Site</a></p>`;
         }
 
-        document.getElementById('poi-info-content').innerHTML = contentHTML;
+        document.getElementById('poi-info-content').innerHTML = DOMPurify.sanitize(contentHTML);
         document.getElementById('poi-info-view').classList.add('open');
         
         calculateDistances(place.location);
@@ -374,19 +398,21 @@ async function showPoiDetails(index) {
     }
 }
 
-function calculateDistances(destination) {
+async function calculateDistances(destination) {
     const mode = document.getElementById('travel-mode').value;
-    distanceService.getDistanceMatrix({
-        origins: locations.map(l => ({ lat: l.lat, lng: l.lng })),
-        destinations: [destination],
-        travelMode: google.maps.TravelMode[mode],
-    }, (response, status) => {
+    const origins = locations.map(l => `${l.lat},${l.lng}`).join('|');
+    const destStr = `${destination.lat()},${destination.lng()}`;
+
+    try {
+        const response = await fetch(`/api/distance-matrix?origins=${encodeURIComponent(origins)}&destinations=${encodeURIComponent(destStr)}&travelMode=${mode}`);
+        const data = await response.json();
+        
         const resultsEl = document.getElementById('distance-matrix-results');
-        if (status === 'OK') {
+        if (data.status === 'OK') {
             let results = [];
             let durations = [];
 
-            response.rows.forEach((row, i) => {
+            data.rows.forEach((row, i) => {
                 const el = row.elements[0];
                 if (el.status === 'OK') {
                     durations.push(el.duration.value);
@@ -419,11 +445,14 @@ function calculateDistances(destination) {
                     </li>`;
                 });
                 html += '</ul>';
-                resultsEl.innerHTML = html;
+                resultsEl.innerHTML = DOMPurify.sanitize(html);
                 updateFairness(durations);
             }
         }
-    });
+    } catch (error) {
+        console.error('Distance calculation error:', error);
+        document.getElementById('distance-matrix-results').textContent = 'Error calculating distances.';
+    }
 }
 function updateFairness(durations) {
     const fairnessEl = document.getElementById('fairness-score');
@@ -436,10 +465,10 @@ function updateFairness(durations) {
     fairnessEl.classList.remove('hidden', 'fairness-good', 'fairness-warning');
     if (diffMin < 10) {
         fairnessEl.classList.add('fairness-good');
-        fairnessEl.innerHTML = '⚖️ <strong>Very Fair:</strong> Travel times are balanced within 10 mins.';
+        fairnessEl.innerHTML = DOMPurify.sanitize('⚖️ <strong>Very Fair:</strong> Travel times are balanced within 10 mins.');
     } else {
         fairnessEl.classList.add('fairness-warning');
-        fairnessEl.innerHTML = `⚖️ <strong>Unbalanced:</strong> ${Math.round(diffMin)} min difference between participants.`;
+        fairnessEl.innerHTML = DOMPurify.sanitize(`⚖️ <strong>Unbalanced:</strong> ${Math.round(diffMin)} min difference between participants.`);
     }
 }
 
@@ -506,12 +535,12 @@ function updateUI() {
     locations.forEach((loc, index) => {
         const li = document.createElement('li');
         li.className = 'location-card';
-        li.innerHTML = `
+        li.innerHTML = DOMPurify.sanitize(`
             <div class="location-info">
                 <span class="location-name">${loc.name}</span>
             </div>
             <button class="remove-btn" onclick="handleRemoveLocation(${index})">✕</button>
-        `;
+        `);
         list.appendChild(li);
     });
 }
