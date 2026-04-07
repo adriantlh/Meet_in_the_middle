@@ -398,7 +398,7 @@ async function showPoiDetails(index) {
         // Append the sanitized text content AFTER the image
         const detailsDiv = document.createElement('div');
         detailsDiv.innerHTML = DOMPurify.sanitize(contentHTML, { 
-            ADD_ATTR: ['href', 'target', 'rel', 'style']
+            ADD_ATTR: ['id', 'href', 'target', 'rel', 'style']
         });
         infoContent.appendChild(detailsDiv);
 
@@ -418,11 +418,17 @@ async function calculateDistances(destination) {
     const origins = locations.map(l => `${l.lat},${l.lng}`).join('|');
     const destStr = `${destination.lat()},${destination.lng()}`;
 
+    console.log('🕒 Calculating distances via proxy...');
     try {
         const response = await fetch(`/api/distance-matrix?origins=${encodeURIComponent(origins)}&destinations=${encodeURIComponent(destStr)}&travelMode=${mode}`);
         const data = await response.json();
         
         const resultsEl = document.getElementById('distance-matrix-results');
+        if (!resultsEl) {
+            console.error('❌ Could not find distance-matrix-results element');
+            return;
+        }
+
         if (data.status === 'OK') {
             let results = [];
             let durations = [];
@@ -443,30 +449,59 @@ async function calculateDistances(destination) {
                 const minDuration = Math.min(...durations);
                 const maxDuration = Math.max(...durations);
 
-                let html = '<ul style="list-style: none; padding: 0; margin: 0;">';
+                // Use DOM API instead of innerHTML for robust rendering
+                resultsEl.innerHTML = '';
+                const ul = document.createElement('ul');
+                ul.style.listStyle = 'none';
+                ul.style.padding = '0';
+                ul.style.margin = '0';
+
                 results.forEach(res => {
-                    let label = '';
+                    const li = document.createElement('li');
+                    li.style.marginBottom = '8px';
+                    li.style.display = 'flex';
+                    li.style.justifyContent = 'space-between';
+                    li.style.alignItems = 'center';
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.style.color = 'var(--text-sub)';
+                    nameSpan.textContent = `${res.name}:`;
+
+                    const valDiv = document.createElement('div');
+                    const strong = document.createElement('strong');
+                    strong.style.color = 'var(--text-main)';
+                    strong.textContent = res.durationText;
+                    valDiv.appendChild(strong);
+
                     if (durations.length > 1) {
-                        if (res.durationValue === minDuration) label = '<span class="time-label time-fastest">Fastest</span>';
-                        else if (res.durationValue === maxDuration) label = '<span class="time-label time-slowest">Slowest</span>';
+                        if (res.durationValue === minDuration) {
+                            const label = document.createElement('span');
+                            label.className = 'time-label time-fastest';
+                            label.textContent = 'Fastest';
+                            valDiv.appendChild(label);
+                        } else if (res.durationValue === maxDuration) {
+                            const label = document.createElement('span');
+                            label.className = 'time-label time-slowest';
+                            label.textContent = 'Slowest';
+                            valDiv.appendChild(label);
+                        }
                     }
 
-                    html += `<li style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                        <span style="color: var(--text-sub);">${res.name}:</span>
-                        <div>
-                            <strong style="color: var(--text-main);">${res.durationText}</strong>
-                            ${label}
-                        </div>
-                    </li>`;
+                    li.appendChild(nameSpan);
+                    li.appendChild(valDiv);
+                    ul.appendChild(li);
                 });
-                html += '</ul>';
-                resultsEl.innerHTML = DOMPurify.sanitize(html, { ADD_ATTR: ['style'] });
+                resultsEl.appendChild(ul);
                 updateFairness(durations);
             }
+        } else {
+            console.warn('⚠️ Distance Matrix API status:', data.status);
+            resultsEl.textContent = 'Distance calculation unavailable for this location.';
         }
     } catch (error) {
-        console.error('Distance calculation error:', error);
-        document.getElementById('distance-matrix-results').textContent = 'Error calculating distances.';
+        console.error('❌ Distance calculation error:', error);
+        const resultsEl = document.getElementById('distance-matrix-results');
+        if (resultsEl) resultsEl.textContent = 'Error calculating distances.';
     }
 }
 function updateFairness(durations) {

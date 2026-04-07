@@ -21,10 +21,10 @@ To protect the Google Maps API Key from being exposed in high-volume automated s
 ### 1. Input Sanitization (XSS Protection)
 MeetWay uses **DOMPurify** to prevent Cross-Site Scripting (XSS) attacks when injecting HTML into the DOM.
 - **Usage**: Always wrap `innerHTML` assignments in `DOMPurify.sanitize(html, config)`.
-- **Required Configuration**: By default, DOMPurify strips `style` and `src` attributes. Use the following configuration for POI details and distances:
+- **Required Configuration**: By default, DOMPurify strips `style`, `src`, and `id` attributes. Use the following configuration for POI details and distances:
   ```javascript
   DOMPurify.sanitize(html, { 
-      ADD_ATTR: ['src', 'href', 'target', 'rel', 'style'],
+      ADD_ATTR: ['src', 'href', 'target', 'rel', 'style', 'id'],
       ADD_TAGS: ['img', 'a']
   });
   ```

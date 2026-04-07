@@ -17,7 +17,7 @@ app.use(helmet({
             "default-src": ["'self'"],
             "script-src": ["'self'", "'unsafe-inline'", "https://maps.googleapis.com", "https://cdnjs.cloudflare.com", "https://*.gstatic.com"],
             "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://maps.googleapis.com"],
-            "img-src": ["'self'", "data:", "https://maps.gstatic.com", "https://*.googleapis.com", "https://*.ggpht.com"],
+            "img-src": ["'self'", "data:", "https://maps.gstatic.com", "https://*.googleapis.com", "https://*.ggpht.com", "https://*.googleusercontent.com"],
             "font-src": ["'self'", "https://fonts.gstatic.com"],
             "connect-src": ["'self'", "https://maps.googleapis.com", "https://*.googleapis.com", "https://cdnjs.cloudflare.com"],
             "frame-src": ["'self'", "https://www.google.com"],
@@ -49,16 +49,27 @@ app.get('/api/distance-matrix', async (req, res) => {
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
+        console.error('❌ Proxy Error: API key missing');
         return res.status(500).json({ error: 'API key not configured' });
     }
 
     try {
-        const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destinations}&mode=${travelMode.toLowerCase()}&key=${apiKey}`;
+        // Re-encode parameters for Google to handle spaces/commas/pipes
+        const encodedOrigins = encodeURIComponent(origins);
+        const encodedDestinations = encodeURIComponent(destinations);
+        const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodedOrigins}&destinations=${encodedDestinations}&mode=${travelMode.toLowerCase()}&key=${apiKey}`;
+        
+        console.log(`📡 Proxying request to Google: ${travelMode}`);
         const response = await fetch(url);
         const data = await response.json();
+        
+        if (data.status !== 'OK') {
+            console.warn('⚠️ Google API returned non-OK status:', data.status);
+        }
+        
         res.json(data);
     } catch (error) {
-        console.error('Distance Matrix Proxy Error:', error);
+        console.error('❌ Distance Matrix Proxy Error:', error);
         res.status(500).json({ error: 'Failed to fetch distance matrix' });
     }
 });
