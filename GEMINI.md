@@ -9,10 +9,9 @@ When using the New Places library (`google.maps.importLibrary("places")`), certa
 - **Correct**: `websiteURI`, `googleMapsURI`
 - **Incorrect**: `websiteUri`, `googleMapsUri`, `websiteUrl`
 
-### 2. API Key Proxying
-To protect the Google Maps API Key from being exposed in high-volume automated scraping:
-- **Rule**: All **Distance Matrix** calls must be proxied through the backend (`/api/distance-matrix`).
-- **Reason**: This keeps the API key usage for these specific calculation-heavy calls on the server.
+### 2. Distance Matrix API & Key Restrictions
+- **Rule**: All **Distance Matrix** calls should be made via the **Frontend SDK** (`google.maps.DistanceMatrixService`).
+- **Reason**: If your API Key has "Website Referrer" restrictions, Google will block backend (server-to-server) requests to the Distance Matrix Web Service. Using the Frontend SDK ensures the referrer is correctly attached and authorized.
 
 ---
 

@@ -416,25 +416,22 @@ async function showPoiDetails(index) {
 
 async function calculateDistances(destination) {
     const mode = document.getElementById('travel-mode').value;
-    const origins = locations.map(l => `${l.lat},${l.lng}`).join('|');
-    const destStr = `${destination.lat()},${destination.lng()}`;
-
-    console.log('🕒 Calculating distances via proxy...');
-    try {
-        const response = await fetch(`/api/distance-matrix?origins=${encodeURIComponent(origins)}&destinations=${encodeURIComponent(destStr)}&travelMode=${mode}`);
-        const data = await response.json();
-        
+    
+    console.log('🕒 Calculating distances via SDK...');
+    
+    distanceService.getDistanceMatrix({
+        origins: locations.map(l => ({ lat: l.lat, lng: l.lng })),
+        destinations: [destination],
+        travelMode: google.maps.TravelMode[mode],
+    }, (response, status) => {
         const resultsEl = document.getElementById('distance-matrix-results');
-        if (!resultsEl) {
-            console.error('❌ Could not find distance-matrix-results element');
-            return;
-        }
+        if (!resultsEl) return;
 
-        if (data.status === 'OK') {
+        if (status === 'OK') {
             let results = [];
             let durations = [];
 
-            data.rows.forEach((row, i) => {
+            response.rows.forEach((row, i) => {
                 const el = row.elements[0];
                 if (el.status === 'OK') {
                     durations.push(el.duration.value);
@@ -450,7 +447,6 @@ async function calculateDistances(destination) {
                 const minDuration = Math.min(...durations);
                 const maxDuration = Math.max(...durations);
 
-                // Use DOM API instead of innerHTML for robust rendering
                 resultsEl.innerHTML = '';
                 const ul = document.createElement('ul');
                 ul.style.listStyle = 'none';
@@ -496,14 +492,10 @@ async function calculateDistances(destination) {
                 updateFairness(durations);
             }
         } else {
-            console.warn('⚠️ Distance Matrix API status:', data.status);
-            resultsEl.textContent = 'Distance calculation unavailable for this location.';
+            console.error('❌ Distance Matrix SDK Error:', status);
+            resultsEl.textContent = 'Distance calculation unavailable.';
         }
-    } catch (error) {
-        console.error('❌ Distance calculation error:', error);
-        const resultsEl = document.getElementById('distance-matrix-results');
-        if (resultsEl) resultsEl.textContent = 'Error calculating distances.';
-    }
+    });
 }
 function updateFairness(durations) {
     const fairnessEl = document.getElementById('fairness-score');

@@ -4,7 +4,6 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cors = require('cors');
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 require('dotenv').config();
 
 const app = express();
@@ -37,52 +36,12 @@ app.use(cors({
 // Rate limiting middleware
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    max: 100, 
     message: 'Too many requests from this IP, please try again after 15 minutes',
     standardHeaders: true, 
     legacyHeaders: false, 
 });
 app.use(limiter);
-
-// --- API PROXY FOR DISTANCE MATRIX ---
-app.get('/api/distance-matrix', async (req, res) => {
-    const { origins, destinations, travelMode } = req.query;
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-
-    if (!apiKey) {
-        console.error('❌ Proxy Error: API key missing');
-        return res.status(500).json({ error: 'API key not configured' });
-    }
-
-    try {
-        // Re-encode parameters for Google to handle spaces/commas/pipes
-        const encodedOrigins = encodeURIComponent(origins);
-        const encodedDestinations = encodeURIComponent(destinations);
-        const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodedOrigins}&destinations=${encodedDestinations}&mode=${travelMode.toLowerCase()}&key=${apiKey}`;
-        
-        console.log(`📡 Proxying request to Google: ${travelMode}`);
-        
-        // Add Referer header so restricted keys work from the backend
-        const response = await fetch(url, {
-            headers: {
-                'Referer': req.headers.referer || `http://localhost:${port}/`
-            }
-        });
-        const data = await response.json();
-        
-        if (data.status !== 'OK') {
-            console.warn('⚠️ Google API returned non-OK status:', data.status);
-            if (data.error_message) {
-                console.warn('📝 Google Error Message:', data.error_message);
-            }
-        }
-        
-        res.json(data);
-    } catch (error) {
-        console.error('❌ Distance Matrix Proxy Error:', error);
-        res.status(500).json({ error: 'Failed to fetch distance matrix' });
-    }
-});
 
 // Serve js/app.js with API key replacement
 app.get('/js/app.js', (req, res) => {
