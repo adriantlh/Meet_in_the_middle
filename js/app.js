@@ -66,10 +66,12 @@ async function initMap() {
     autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
         if (place.geometry) {
+            const defaultMode = document.getElementById('travel-mode').value;
             locations.push({
                 name: place.formatted_address || place.name,
                 lat: place.geometry.location.lat(),
-                lng: place.geometry.location.lng()
+                lng: place.geometry.location.lng(),
+                travelMode: defaultMode
             });
             addressInput.value = '';
             saveToStorage();
@@ -176,11 +178,13 @@ function handleCurrentLocation() {
             const lng = position.coords.longitude;
             
             geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                const defaultMode = document.getElementById('travel-mode').value;
                 if (status === 'OK' && results[0]) {
                     locations.push({
                         name: results[0].formatted_address,
                         lat: lat,
-                        lng: lng
+                        lng: lng,
+                        travelMode: defaultMode
                     });
                     saveToStorage();
                     updateUI();
@@ -191,7 +195,8 @@ function handleCurrentLocation() {
                     locations.push({
                         name: `My Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
                         lat: lat,
-                        lng: lng
+                        lng: lng,
+                        travelMode: defaultMode
                     });
                     saveToStorage();
                     updateUI();
@@ -213,11 +218,13 @@ function handleAddLocation() {
     showStatus('Finding address...', 'info');
     geocoder.geocode({ address: address }, (results, status) => {
         if (status === 'OK') {
+            const defaultMode = document.getElementById('travel-mode').value;
             const location = results[0].geometry.location;
             locations.push({
                 name: results[0].formatted_address,
                 lat: location.lat(),
-                lng: location.lng()
+                lng: location.lng(),
+                travelMode: defaultMode
             });
             addressInput.value = '';
             saveToStorage();
@@ -415,87 +422,118 @@ async function showPoiDetails(index) {
 }
 
 async function calculateDistances(destination) {
-    const mode = document.getElementById('travel-mode').value;
+    console.log('🕒 Calculating distances via SDK (Per-Participant Modes)...');
     
-    console.log('🕒 Calculating distances via SDK...');
-    
-    distanceService.getDistanceMatrix({
-        origins: locations.map(l => ({ lat: l.lat, lng: l.lng })),
-        destinations: [destination],
-        travelMode: google.maps.TravelMode[mode],
-    }, (response, status) => {
-        const resultsEl = document.getElementById('distance-matrix-results');
-        if (!resultsEl) return;
+    // Group participants by their selected mode
+    const modeGroups = {};
+    locations.forEach((loc, index) => {
+        const mode = loc.travelMode || 'DRIVING';
+        if (!modeGroups[mode]) modeGroups[mode] = [];
+        modeGroups[mode].push({ ...loc, originalIndex: index });
+    });
 
-        if (status === 'OK') {
-            let results = [];
-            let durations = [];
+    const allResults = [];
+    const allDurations = [];
 
-            response.rows.forEach((row, i) => {
-                const el = row.elements[0];
-                if (el.status === 'OK') {
-                    durations.push(el.duration.value);
-                    results.push({
-                        name: locations[i].name.split(',')[0],
-                        durationText: el.duration.text,
-                        durationValue: el.duration.value
+    // Helper to wrap the callback-based SDK in a Promise
+    const getDistancesForMode = (mode, origins) => {
+        return new Promise((resolve) => {
+            distanceService.getDistanceMatrix({
+                origins: origins.map(o => ({ lat: o.lat, lng: o.lng })),
+                destinations: [destination],
+                travelMode: google.maps.TravelMode[mode],
+            }, (response, status) => {
+                if (status === 'OK') {
+                    const results = [];
+                    response.rows.forEach((row, i) => {
+                        const el = row.elements[0];
+                        if (el.status === 'OK') {
+                            results.push({
+                                name: origins[i].name.split(',')[0],
+                                durationText: el.duration.text,
+                                durationValue: el.duration.value,
+                                originalIndex: origins[i].originalIndex
+                            });
+                        }
                     });
+                    resolve(results);
+                } else {
+                    console.error(`❌ SDK Error for mode ${mode}:`, status);
+                    resolve([]);
                 }
             });
+        });
+    };
 
-            if (durations.length > 0) {
-                const minDuration = Math.min(...durations);
-                const maxDuration = Math.max(...durations);
+    // Run all mode requests concurrently
+    const promiseResults = await Promise.all(
+        Object.keys(modeGroups).map(mode => getDistancesForMode(mode, modeGroups[mode]))
+    );
 
-                resultsEl.innerHTML = '';
-                const ul = document.createElement('ul');
-                ul.style.listStyle = 'none';
-                ul.style.padding = '0';
-                ul.style.margin = '0';
-
-                results.forEach(res => {
-                    const li = document.createElement('li');
-                    li.style.marginBottom = '8px';
-                    li.style.display = 'flex';
-                    li.style.justifyContent = 'space-between';
-                    li.style.alignItems = 'center';
-
-                    const nameSpan = document.createElement('span');
-                    nameSpan.style.color = 'var(--text-sub)';
-                    nameSpan.textContent = `${res.name}:`;
-
-                    const valDiv = document.createElement('div');
-                    const strong = document.createElement('strong');
-                    strong.style.color = 'var(--text-main)';
-                    strong.textContent = res.durationText;
-                    valDiv.appendChild(strong);
-
-                    if (durations.length > 1) {
-                        if (res.durationValue === minDuration) {
-                            const label = document.createElement('span');
-                            label.className = 'time-label time-fastest';
-                            label.textContent = 'Fastest';
-                            valDiv.appendChild(label);
-                        } else if (res.durationValue === maxDuration) {
-                            const label = document.createElement('span');
-                            label.className = 'time-label time-slowest';
-                            label.textContent = 'Slowest';
-                            valDiv.appendChild(label);
-                        }
-                    }
-
-                    li.appendChild(nameSpan);
-                    li.appendChild(valDiv);
-                    ul.appendChild(li);
-                });
-                resultsEl.appendChild(ul);
-                updateFairness(durations);
-            }
-        } else {
-            console.error('❌ Distance Matrix SDK Error:', status);
-            resultsEl.textContent = 'Distance calculation unavailable.';
-        }
+    // Merge results
+    promiseResults.forEach(resArray => {
+        resArray.forEach(res => {
+            allResults.push(res);
+            allDurations.push(res.durationValue);
+        });
     });
+
+    // Sort to match original locations order
+    allResults.sort((a, b) => a.originalIndex - b.originalIndex);
+
+    const resultsEl = document.getElementById('distance-matrix-results');
+    if (!resultsEl) return;
+
+    if (allResults.length > 0) {
+        const minDuration = Math.min(...allDurations);
+        const maxDuration = Math.max(...allDurations);
+
+        resultsEl.innerHTML = '';
+        const ul = document.createElement('ul');
+        ul.style.listStyle = 'none';
+        ul.style.padding = '0';
+        ul.style.margin = '0';
+
+        allResults.forEach(res => {
+            const li = document.createElement('li');
+            li.style.marginBottom = '8px';
+            li.style.display = 'flex';
+            li.style.justifyContent = 'space-between';
+            li.style.alignItems = 'center';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.style.color = 'var(--text-sub)';
+            nameSpan.textContent = `${res.name}:`;
+
+            const valDiv = document.createElement('div');
+            const strong = document.createElement('strong');
+            strong.style.color = 'var(--text-main)';
+            strong.textContent = res.durationText;
+            valDiv.appendChild(strong);
+
+            if (allDurations.length > 1) {
+                if (res.durationValue === minDuration) {
+                    const label = document.createElement('span');
+                    label.className = 'time-label time-fastest';
+                    label.textContent = 'Fastest';
+                    valDiv.appendChild(label);
+                } else if (res.durationValue === maxDuration) {
+                    const label = document.createElement('span');
+                    label.className = 'time-label time-slowest';
+                    label.textContent = 'Slowest';
+                    valDiv.appendChild(label);
+                }
+            }
+
+            li.appendChild(nameSpan);
+            li.appendChild(valDiv);
+            ul.appendChild(li);
+        });
+        resultsEl.appendChild(ul);
+        updateFairness(allDurations);
+    } else {
+        resultsEl.textContent = 'Distance calculation unavailable.';
+    }
 }
 function updateFairness(durations) {
     const fairnessEl = document.getElementById('fairness-score');
@@ -579,10 +617,33 @@ function updateUI() {
         const li = document.createElement('li');
         li.className = 'location-card';
         
-        // Use separate elements and event listeners instead of inline onclick for security
         const info = document.createElement('div');
         info.className = 'location-info';
-        info.innerHTML = DOMPurify.sanitize(`<span class="location-name">${loc.name}</span>`);
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'location-name';
+        nameSpan.textContent = loc.name;
+        
+        // Mode Selector for this specific participant
+        const modeSelect = document.createElement('select');
+        modeSelect.style.fontSize = '10px';
+        modeSelect.style.padding = '2px 4px';
+        modeSelect.style.marginTop = '4px';
+        modeSelect.style.width = 'auto';
+        modeSelect.innerHTML = `
+            <option value="DRIVING" ${loc.travelMode === 'DRIVING' ? 'selected' : ''}>🚗 Drive</option>
+            <option value="WALKING" ${loc.travelMode === 'WALKING' ? 'selected' : ''}>🚶 Walk</option>
+            <option value="BICYCLING" ${loc.travelMode === 'BICYCLING' ? 'selected' : ''}>🚲 Bike</option>
+            <option value="TRANSIT" ${loc.travelMode === 'TRANSIT' ? 'selected' : ''}>🚆 Transit</option>
+        `;
+        modeSelect.onchange = (e) => {
+            locations[index].travelMode = e.target.value;
+            saveToStorage();
+            showStatus(`Updated mode for ${loc.name.split(',')[0]}`, 'info');
+        };
+
+        info.appendChild(nameSpan);
+        info.appendChild(modeSelect);
         
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-btn';
@@ -649,7 +710,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('directions-btn').addEventListener('click', () => {
         if (!currentPoiDetails || locations.length === 0) return;
         const name = currentPoiDetails.displayName ? (typeof currentPoiDetails.displayName === 'string' ? currentPoiDetails.displayName : currentPoiDetails.displayName.text) : 'Location';
-        const mode = document.getElementById('travel-mode').value.toLowerCase();
+        // Use the mode specifically chosen for the first participant
+        const mode = (locations[0].travelMode || 'DRIVING').toLowerCase();
         const url = `https://www.google.com/maps/dir/?api=1&origin=${locations[0].lat},${locations[0].lng}&destination=${encodeURIComponent(name)}&destination_place_id=${currentPoiDetails.id}&travelmode=${mode}`;
         window.open(url, '_blank');
     });

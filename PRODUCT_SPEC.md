@@ -13,7 +13,7 @@ MeetWay is a web-based application designed to help users find a convenient meet
 
 ### 2. Geographic Center & Travel Flexibility
 - **Centroid Logic:** The app calculates the average latitude and longitude (geographic center) of all active locations.
-- **Travel Modes:** Users can select between **Driving, Walking, Bicycling, or Transit** modes. These choices directly affect the travel time calculations and the fairness score.
+- **Individual Travel Modes:** Users can select between **Driving, Walking, Bicycling, or Transit** modes **individually for each participant**. These choices directly affect the travel time calculations and the fairness score for each person.
 - **Visual Representation:** The center is marked on the map with a distinct target icon and a semi-transparent blue circle representing the search radius.
 
 ### 3. Point of Interest (POI) Discovery

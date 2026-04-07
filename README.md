@@ -7,7 +7,7 @@ MeetWay is a smart "Meet in the Middle" web application designed to find the per
 - **Multi-Location Input:** Add any number of participants using Google Maps Autocomplete or direct address entry with smart geocoding fallback.
 - **Current Location Support:** Quickly add your own starting point with a single click using the GPS icon.
 - **Centroid Math:** Uses 3D Cartesian vector averaging to find the true geographic center between coordinates.
-- **Flexible Travel Modes:** Calculate travel times for Driving, Walking, Bicycling, or Transit.
+- **Flexible Travel Modes:** Calculate travel times for Driving, Walking, Bicycling, or Transit **individually for each participant**.
 - **Expanded POI Discovery:** Search for Restaurants, Cafes, Bars, Parks, and more, or use **Custom Search** to find specific venues near the center.
 - **Fairness Scoring:** Uses the Google Distance Matrix API to calculate travel times for all participants and highlights the **Fastest** and **Slowest** routes to ensure a balanced meeting spot.
 - **Dark Mode:** Seamlessly toggle between light and dark themes for better usability in any environment.
