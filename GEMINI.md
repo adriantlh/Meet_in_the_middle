@@ -40,6 +40,33 @@ The app uses **Helmet.js** to enforce a strict CSP. If adding new external libra
 
 ---
 
+## 🧪 Testing Requirements
+
+### 1. Mandatory Pre-Push Testing
+All changes **MUST** pass the full Playwright test suite before being pushed to `main`.
+- **Command**: `npm test`
+- **Scope**: Includes UI responsiveness, location management, POI discovery, and security features.
+
+### 2. Geolocation Testing
+When testing the "Current Location" feature, use Playwright's `setGeolocation` and `grantPermissions` to ensure consistent results.
+
+---
+
+## 🐛 Bug Prevention
+
+### 1. DOMPurify vs. Event Handlers
+- **Problem**: `DOMPurify.sanitize()` strips inline `onclick`, `onchange`, etc.
+- **Rule**: Never use inline `onclick` in templates passed to `DOMPurify`. Instead, create elements via `document.createElement()` and attach listeners using `.onclick = ...` or `.addEventListener()`.
+
+### 2. Images and Styles
+- **Rule**: When injecting HTML with images or custom styles, you must explicitly allow the attributes:
+  ```javascript
+  DOMPurify.sanitize(html, { ADD_ATTR: ['src', 'style'] });
+  ```
+- **Better Alternative**: Create the `<img>` element dynamically and append it to the sanitized container to avoid attribute stripping.
+
+---
+
 ## 🚀 Deployment Checklist
 
 1.  **Environment Variables**: Ensure `GOOGLE_MAPS_API_KEY` is set in the production environment (Render/Vercel).

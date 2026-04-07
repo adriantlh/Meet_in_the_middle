@@ -369,7 +369,12 @@ async function showPoiDetails(index) {
         // Hero Image
         if (place.photos && place.photos.length > 0) {
             const photoUrl = place.photos[0].getURI({ maxWidth: 400, maxHeight: 250 });
-            contentHTML += `<img src="${photoUrl}" class="poi-hero-img">`;
+            // Directly create element to avoid DOMPurify issues with complex attributes
+            const img = document.createElement('img');
+            img.src = photoUrl;
+            img.className = 'poi-hero-img';
+            img.alt = name;
+            contentHTML += img.outerHTML;
         }
 
         contentHTML += `<div id="distance-info" style="margin-bottom: 20px;">
@@ -542,12 +547,20 @@ function updateUI() {
     locations.forEach((loc, index) => {
         const li = document.createElement('li');
         li.className = 'location-card';
-        li.innerHTML = DOMPurify.sanitize(`
-            <div class="location-info">
-                <span class="location-name">${loc.name}</span>
-            </div>
-            <button class="remove-btn" onclick="handleRemoveLocation(${index})">✕</button>
-        `, { ADD_ATTR: ['style'] });
+        
+        // Use separate elements and event listeners instead of inline onclick for security
+        const info = document.createElement('div');
+        info.className = 'location-info';
+        info.innerHTML = DOMPurify.sanitize(`<span class="location-name">${loc.name}</span>`);
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-btn';
+        removeBtn.innerHTML = '✕';
+        removeBtn.title = 'Remove Location';
+        removeBtn.onclick = () => handleRemoveLocation(index);
+        
+        li.appendChild(info);
+        li.appendChild(removeBtn);
         list.appendChild(li);
     });
 }
