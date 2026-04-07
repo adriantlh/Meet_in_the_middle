@@ -364,19 +364,19 @@ async function showPoiDetails(index) {
         const name = place.displayName ? (typeof place.displayName === 'string' ? place.displayName : place.displayName.text) : 'Details';
         document.getElementById('poi-info-name').textContent = name;
         
-        let contentHTML = '';
+        const infoContent = document.getElementById('poi-info-content');
+        infoContent.innerHTML = ''; // Clear previous
         
-        // Hero Image
+        // Hero Image - Directly create and append element to avoid string-based sanitization stripping
         if (place.photos && place.photos.length > 0) {
-            const photoUrl = place.photos[0].getURI({ maxWidth: 400, maxHeight: 250 });
-            // Directly create element to avoid DOMPurify issues with complex attributes
             const img = document.createElement('img');
-            img.src = photoUrl;
+            img.src = place.photos[0].getURI({ maxWidth: 400, maxHeight: 250 });
             img.className = 'poi-hero-img';
             img.alt = name;
-            contentHTML += img.outerHTML;
+            infoContent.appendChild(img);
         }
 
+        let contentHTML = '';
         contentHTML += `<div id="distance-info" style="margin-bottom: 20px;">
             <strong style="font-size: 14px; display: block; margin-bottom: 8px;">Travel Times</strong>
             <div id="distance-matrix-results" style="background: var(--bg-light); padding: 12px; border-radius: 8px; font-size: 13px;">Calculating...</div>
@@ -395,10 +395,13 @@ async function showPoiDetails(index) {
             contentHTML += `<p><strong>Website:</strong> <a href="${place.websiteURI}" target="_blank" rel="noopener noreferrer">Visit Site</a></p>`;
         }
 
-        document.getElementById('poi-info-content').innerHTML = DOMPurify.sanitize(contentHTML, { 
-            ADD_ATTR: ['src', 'href', 'target', 'rel', 'style'],
-            ADD_TAGS: ['img', 'a']
+        // Append the sanitized text content AFTER the image
+        const detailsDiv = document.createElement('div');
+        detailsDiv.innerHTML = DOMPurify.sanitize(contentHTML, { 
+            ADD_ATTR: ['href', 'target', 'rel', 'style']
         });
+        infoContent.appendChild(detailsDiv);
+
         document.getElementById('poi-info-view').classList.add('open');
         
         calculateDistances(place.location);
@@ -604,6 +607,17 @@ function clearPois() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Drawer navigation
+    document.getElementById('poi-back-btn').addEventListener('click', () => {
+        document.getElementById('poi-info-view').classList.remove('open');
+    });
+    document.getElementById('poi-close-btn').addEventListener('click', () => {
+        document.getElementById('poi-details-panel').classList.remove('visible');
+    });
+    document.getElementById('poi-back-to-map-btn').addEventListener('click', () => {
+        document.getElementById('poi-details-panel').classList.remove('visible');
+    });
+
     document.getElementById('directions-btn').addEventListener('click', () => {
         if (!currentPoiDetails || locations.length === 0) return;
         const name = currentPoiDetails.displayName ? (typeof currentPoiDetails.displayName === 'string' ? currentPoiDetails.displayName : currentPoiDetails.displayName.text) : 'Location';
