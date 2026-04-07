@@ -327,7 +327,7 @@ async function handleSearchPois() {
     }
 }
 
-function updatePoiList() {
+async function updatePoiList() {
     const list = document.getElementById('poi-list');
     list.innerHTML = '';
     foundPois.forEach((place, index) => {
@@ -342,8 +342,11 @@ function updatePoiList() {
                 <div class="poi-item-meta">${rating} • Click for details</div>
             </div>
             <div style="font-size: 20px; color: var(--primary);">→</div>
-        `);
-        div.onclick = () => showPoiDetails(index);
+        `, { ADD_ATTR: ['style'] });
+        div.onclick = (e) => {
+            e.stopPropagation();
+            showPoiDetails(index);
+        };
         list.appendChild(div);
     });
 }
@@ -353,8 +356,8 @@ async function showPoiDetails(index) {
     if (!place) return;
 
     try {
-        // Correct field names for the New Places Library (Note the uppercase URI)
-        const detailsFields = ['id', 'displayName', 'rating', 'userRatingCount', 'photos', 'websiteURI', 'internationalPhoneNumber', 'googleMapsURI', 'priceLevel'];
+        // Correct field names for the New Places Library (camelCase Uri)
+        const detailsFields = ['id', 'displayName', 'rating', 'userRatingCount', 'photos', 'websiteUri', 'internationalPhoneNumber', 'googleMapsUri', 'priceLevel'];
         await place.fetchFields({ fields: detailsFields });
         currentPoiDetails = place;
 
@@ -365,7 +368,8 @@ async function showPoiDetails(index) {
         
         // Hero Image
         if (place.photos && place.photos.length > 0) {
-            contentHTML += `<img src="${place.photos[0].getURI({ maxWidth: 400, maxHeight: 250 })}" class="poi-hero-img">`;
+            const photoUrl = place.photos[0].getURI({ maxWidth: 400, maxHeight: 250 });
+            contentHTML += `<img src="${photoUrl}" class="poi-hero-img">`;
         }
 
         contentHTML += `<div id="distance-info" style="margin-bottom: 20px;">
@@ -381,12 +385,15 @@ async function showPoiDetails(index) {
             contentHTML += `<p><strong>Phone:</strong> <a href="tel:${place.internationalPhoneNumber}">${place.internationalPhoneNumber}</a></p>`;
         }
 
-        // Access as websiteURI
-        if (place.websiteURI) {
-            contentHTML += `<p><strong>Website:</strong> <a href="${place.websiteURI}" target="_blank">Visit Site</a></p>`;
+        // Access as websiteUri
+        if (place.websiteUri) {
+            contentHTML += `<p><strong>Website:</strong> <a href="${place.websiteUri}" target="_blank" rel="noopener noreferrer">Visit Site</a></p>`;
         }
 
-        document.getElementById('poi-info-content').innerHTML = DOMPurify.sanitize(contentHTML);
+        document.getElementById('poi-info-content').innerHTML = DOMPurify.sanitize(contentHTML, { 
+            ADD_ATTR: ['src', 'href', 'target', 'rel', 'style'],
+            ADD_TAGS: ['img', 'a']
+        });
         document.getElementById('poi-info-view').classList.add('open');
         
         calculateDistances(place.location);
@@ -394,7 +401,7 @@ async function showPoiDetails(index) {
         map.setZoom(15);
     } catch (error) {
         console.error('Error fetching place details:', error);
-        showStatus('Error: ' + error.message, 'error');
+        showStatus('Error loading details. Check console.', 'error');
     }
 }
 
@@ -445,7 +452,7 @@ async function calculateDistances(destination) {
                     </li>`;
                 });
                 html += '</ul>';
-                resultsEl.innerHTML = DOMPurify.sanitize(html);
+                resultsEl.innerHTML = DOMPurify.sanitize(html, { ADD_ATTR: ['style'] });
                 updateFairness(durations);
             }
         }
@@ -465,10 +472,10 @@ function updateFairness(durations) {
     fairnessEl.classList.remove('hidden', 'fairness-good', 'fairness-warning');
     if (diffMin < 10) {
         fairnessEl.classList.add('fairness-good');
-        fairnessEl.innerHTML = DOMPurify.sanitize('⚖️ <strong>Very Fair:</strong> Travel times are balanced within 10 mins.');
+        fairnessEl.innerHTML = DOMPurify.sanitize('⚖️ <strong>Very Fair:</strong> Travel times are balanced within 10 mins.', { ADD_ATTR: ['style'] });
     } else {
         fairnessEl.classList.add('fairness-warning');
-        fairnessEl.innerHTML = DOMPurify.sanitize(`⚖️ <strong>Unbalanced:</strong> ${Math.round(diffMin)} min difference between participants.`);
+        fairnessEl.innerHTML = DOMPurify.sanitize(`⚖️ <strong>Unbalanced:</strong> ${Math.round(diffMin)} min difference between participants.`, { ADD_ATTR: ['style'] });
     }
 }
 
@@ -540,7 +547,7 @@ function updateUI() {
                 <span class="location-name">${loc.name}</span>
             </div>
             <button class="remove-btn" onclick="handleRemoveLocation(${index})">✕</button>
-        `);
+        `, { ADD_ATTR: ['style'] });
         list.appendChild(li);
     });
 }
