@@ -61,11 +61,20 @@ app.get('/api/distance-matrix', async (req, res) => {
         const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodedOrigins}&destinations=${encodedDestinations}&mode=${travelMode.toLowerCase()}&key=${apiKey}`;
         
         console.log(`📡 Proxying request to Google: ${travelMode}`);
-        const response = await fetch(url);
+        
+        // Add Referer header so restricted keys work from the backend
+        const response = await fetch(url, {
+            headers: {
+                'Referer': req.headers.referer || `http://localhost:${port}/`
+            }
+        });
         const data = await response.json();
         
         if (data.status !== 'OK') {
             console.warn('⚠️ Google API returned non-OK status:', data.status);
+            if (data.error_message) {
+                console.warn('📝 Google Error Message:', data.error_message);
+            }
         }
         
         res.json(data);
