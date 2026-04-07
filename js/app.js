@@ -373,6 +373,7 @@ async function showPoiDetails(index) {
             img.src = place.photos[0].getURI({ maxWidth: 400, maxHeight: 250 });
             img.className = 'poi-hero-img';
             img.alt = name;
+            img.crossOrigin = 'anonymous'; // Allow cross-origin loading
             infoContent.appendChild(img);
         }
 

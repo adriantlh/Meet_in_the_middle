@@ -64,6 +64,7 @@ When testing the "Current Location" feature, use Playwright's `setGeolocation` a
   DOMPurify.sanitize(html, { ADD_ATTR: ['src', 'style'] });
   ```
 - **Better Alternative**: Create the `<img>` element dynamically and append it to the sanitized container to avoid attribute stripping.
+- **Production Tip**: For images from Google Maps to load under strict security headers (e.g. on Render), always set `img.crossOrigin = 'anonymous'`.
 
 ---
 
