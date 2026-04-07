@@ -19,7 +19,7 @@ app.use(helmet({
             "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://maps.googleapis.com"],
             "img-src": ["'self'", "data:", "https://maps.gstatic.com", "https://*.googleapis.com", "https://*.ggpht.com"],
             "font-src": ["'self'", "https://fonts.gstatic.com"],
-            "connect-src": ["'self'", "https://maps.googleapis.com", "https://*.googleapis.com"],
+            "connect-src": ["'self'", "https://maps.googleapis.com", "https://*.googleapis.com", "https://cdnjs.cloudflare.com"],
             "frame-src": ["'self'", "https://www.google.com"],
         },
     },

@@ -356,8 +356,8 @@ async function showPoiDetails(index) {
     if (!place) return;
 
     try {
-        // Correct field names for the New Places Library (camelCase Uri)
-        const detailsFields = ['id', 'displayName', 'rating', 'userRatingCount', 'photos', 'websiteUri', 'internationalPhoneNumber', 'googleMapsUri', 'priceLevel'];
+        // Correct field names for the New Places Library (Note: URI must be uppercase)
+        const detailsFields = ['id', 'displayName', 'rating', 'userRatingCount', 'photos', 'websiteURI', 'internationalPhoneNumber', 'googleMapsURI', 'priceLevel'];
         await place.fetchFields({ fields: detailsFields });
         currentPoiDetails = place;
 
@@ -385,9 +385,9 @@ async function showPoiDetails(index) {
             contentHTML += `<p><strong>Phone:</strong> <a href="tel:${place.internationalPhoneNumber}">${place.internationalPhoneNumber}</a></p>`;
         }
 
-        // Access as websiteUri
-        if (place.websiteUri) {
-            contentHTML += `<p><strong>Website:</strong> <a href="${place.websiteUri}" target="_blank" rel="noopener noreferrer">Visit Site</a></p>`;
+        // Access as websiteURI
+        if (place.websiteURI) {
+            contentHTML += `<p><strong>Website:</strong> <a href="${place.websiteURI}" target="_blank" rel="noopener noreferrer">Visit Site</a></p>`;
         }
 
         document.getElementById('poi-info-content').innerHTML = DOMPurify.sanitize(contentHTML, { 
