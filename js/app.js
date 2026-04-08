@@ -471,10 +471,11 @@ async function calculateDistances(destination) {
     );
 
     // Merge results
-    promiseResults.forEach(resArray => {
+    promiseResults.forEach((resArray, idx) => {
+        const mode = Object.keys(modeGroups)[idx];
         resArray.forEach(res => {
-            allResults.push(res);
-            allDurations.push(res.durationValue);
+            allResults.push({ ...res, mode });
+            allDurations.push({ value: res.durationValue, mode });
         });
     });
 
@@ -485,8 +486,8 @@ async function calculateDistances(destination) {
     if (!resultsEl) return;
 
     if (allResults.length > 0) {
-        const minDuration = Math.min(...allDurations);
-        const maxDuration = Math.max(...allDurations);
+        const minDuration = Math.min(...allDurations.map(d => d.value));
+        const maxDuration = Math.max(...allDurations.map(d => d.value));
 
         resultsEl.innerHTML = '';
         const ul = document.createElement('ul');
@@ -511,7 +512,7 @@ async function calculateDistances(destination) {
             strong.textContent = res.durationText;
             valDiv.appendChild(strong);
 
-            if (allDurations.length > 1) {
+            if (allResults.length > 1) {
                 if (res.durationValue === minDuration) {
                     const label = document.createElement('span');
                     label.className = 'time-label time-fastest';
@@ -535,21 +536,40 @@ async function calculateDistances(destination) {
         resultsEl.textContent = 'Distance calculation unavailable.';
     }
 }
-function updateFairness(durations) {
-    const fairnessEl = document.getElementById('fairness-score');
-    if (durations.length < 2) return;
 
-    const max = Math.max(...durations);
-    const min = Math.min(...durations);
-    const diffMin = (max - min) / 60; // difference in minutes
+function getEffortMultiplier(mode) {
+    const multipliers = {
+        'DRIVING': 1.0,
+        'TRANSIT': 1.3,
+        'BICYCLING': 1.8,
+        'WALKING': 3.0
+    };
+    return multipliers[mode] || 1.0;
+}
+
+function updateFairness(durationsWithModes) {
+    const fairnessEl = document.getElementById('fairness-score');
+    if (durationsWithModes.length < 2) return;
+
+    // Calculate "Effort Units" (minutes * effort multiplier)
+    const effortScores = durationsWithModes.map(d => {
+        const mins = d.value / 60;
+        return mins * getEffortMultiplier(d.mode);
+    });
+
+    const maxEffort = Math.max(...effortScores);
+    const minEffort = Math.min(...effortScores);
+    const effortGap = maxEffort - minEffort;
 
     fairnessEl.classList.remove('hidden', 'fairness-good', 'fairness-warning');
-    if (diffMin < 10) {
+    
+    // Gap < 15 effort units is considered balanced
+    if (effortGap < 15) {
         fairnessEl.classList.add('fairness-good');
-        fairnessEl.innerHTML = DOMPurify.sanitize('⚖️ <strong>Very Fair:</strong> Travel times are balanced within 10 mins.', { ADD_ATTR: ['style'] });
+        fairnessEl.innerHTML = DOMPurify.sanitize('⚖️ <strong>Balanced Effort:</strong> Travel burden is fair for everyone.', { ADD_ATTR: ['style'] });
     } else {
         fairnessEl.classList.add('fairness-warning');
-        fairnessEl.innerHTML = DOMPurify.sanitize(`⚖️ <strong>Unbalanced:</strong> ${Math.round(diffMin)} min difference between participants.`, { ADD_ATTR: ['style'] });
+        fairnessEl.innerHTML = DOMPurify.sanitize(`⚖️ <strong>Unbalanced:</strong> Travel effort is unevenly distributed across transport modes.`, { ADD_ATTR: ['style'] });
     }
 }
 
