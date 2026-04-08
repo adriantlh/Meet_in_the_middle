@@ -25,8 +25,13 @@
             </div>
             <div class="header-actions">
                 <nav class="header-nav">
-                    <a href="#" onclick="showHowItWorks()">How it works</a>
+                    <a href="#" onclick="showHowItWorks()" title="How it works">Guides</a>
+                    <a href="https://github.com/adriantlh/Meet_in_the_middle" target="_blank" title="View Source on GitHub">
+                        <span class="desktop-only">GitHub</span>
+                        <span class="mobile-only">💻</span>
+                    </a>
                 </nav>
+                <div class="v-divider"></div>
                 <button id="theme-toggle" class="theme-toggle" title="Toggle Theme">🌓</button>
             </div>
         </div>
@@ -88,9 +93,16 @@
         <div id="status-message" class="hidden"></div>
 
         <footer class="sidebar-footer">
-            <p>&copy; 2026 MeetWay. Built with Google Maps Platform.</p>
-            <div class="footer-links">
-                <a href="#">Privacy</a> • <a href="#">Terms</a>
+            <div class="footer-content">
+                <p>&copy; 2026 MeetWay. Built with ❤️</p>
+                <div class="footer-links">
+                    <a href="#" onclick="showHowItWorks()">About</a> • 
+                    <a href="https://github.com/adriantlh/Meet_in_the_middle/issues" target="_blank">Report Bug</a> • 
+                    <a href="#">Privacy</a>
+                </div>
+                <div class="footer-attribution">
+                    Powered by Google Maps Platform
+                </div>
             </div>
         </footer>
     </div>

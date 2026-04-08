@@ -88,24 +88,33 @@ body, html {
 .header-actions {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 16px;
 }
 
 .header-nav {
     display: flex;
-    gap: 24px;
+    gap: 16px;
 }
 
 .header-nav a {
     text-decoration: none;
     color: var(--text-sub);
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 600;
     transition: var(--transition);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
 }
 
 .header-nav a:hover {
     color: var(--primary);
+    background-color: rgba(26, 115, 232, 0.05);
+}
+
+.v-divider {
+    width: 1px;
+    height: 24px;
+    background-color: var(--border);
 }
 
 /* Theme Toggle */
@@ -121,7 +130,7 @@ body, html {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 18px;
+    font-size: 16px;
     transition: var(--transition);
 }
 
@@ -161,24 +170,49 @@ body, html {
 /* Sidebar Footer */
 .sidebar-footer {
     margin-top: auto;
-    padding-top: 24px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+}
+
+.footer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     text-align: center;
-    font-size: 11px;
-    color: var(--text-sub);
-    border-top: 1px dashed var(--border);
+}
+
+.sidebar-footer p {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-main);
 }
 
 .footer-links {
-    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-sub);
 }
 
 .footer-links a {
-    color: var(--primary);
+    color: var(--text-sub);
     text-decoration: none;
+    transition: var(--transition);
 }
 
 .footer-links a:hover {
+    color: var(--primary);
     text-decoration: underline;
+}
+
+.footer-attribution {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-sub);
+    opacity: 0.8;
 }
 
 /* Right Drawer for POIs */
