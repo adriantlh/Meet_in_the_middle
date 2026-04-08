@@ -12,34 +12,15 @@ const STORAGE_KEY = 'meetway_locations';
 
 // --- DYNAMIC LOADER ---
 // This is the modern way to load the Google Maps JS API.
-(async () => {
-    // 1. Get the API key injected by server.js (or fallback for local dev)
-    // We'll read it from a data attribute or a global variable if we want,
-    // but the easiest is to just let server.js replace it in the script loader.
-    
-    const loaderScript = document.createElement('script');
-    // server.js will replace %GOOGLE_MAPS_API_KEY% here
-    loaderScript.src = `https://maps.googleapis.com/maps/api/js?key=%GOOGLE_MAPS_API_KEY%&libraries=places,marker&v=beta`;
-    loaderScript.async = true;
-    loaderScript.defer = true;
-    
-    loaderScript.onload = () => {
-        initMap();
-    };
-    
-    document.head.appendChild(loaderScript);
-})();
-
 // --- INITIALIZATION ---
 async function initMap() {
     // Import libraries using the new Maps SDK pattern
     const { Map } = await google.maps.importLibrary("maps");
     const { Geocoder } = await google.maps.importLibrary("geocoding");
-    // PlaceAutocompleteElement is part of the 'places' library
-    await google.maps.importLibrary("places");
     
     const isDark = localStorage.getItem('meetway_theme') === 'dark';
     
+    // Create new map instance
     map = new Map(document.getElementById("map"), {
         zoom: 4,
         center: { lat: 1.3521, lng: 103.8198 }, // Default to Singapore for your context
@@ -56,41 +37,45 @@ async function initMap() {
     infoWindow = new google.maps.InfoWindow();
     distanceService = new google.maps.DistanceMatrixService();
 
+    // Re-initialize autocomplete for the new map if it was already setup
+    const addressInput = document.getElementById('address-input');
+    if (addressInput) {
+        const { Autocomplete } = await google.maps.importLibrary("places");
+        autocomplete = new Autocomplete(addressInput, {
+            fields: ['formatted_address', 'geometry', 'name'],
+            types: ['geocode', 'establishment']
+        });
+
+        autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (place.geometry) {
+                const defaultMode = document.getElementById('travel-mode').value;
+                locations.push({
+                    name: place.formatted_address || place.name,
+                    lat: place.geometry.location.lat(),
+                    lng: place.geometry.location.lng(),
+                    travelMode: defaultMode
+                });
+                addressInput.value = '';
+                saveToStorage();
+                updateUI();
+                recalculateAndRedraw();
+                showStatus(`Added participant location`, 'info');
+            }
+        });
+    }
+}
+
+// Separate one-time listeners
+function setupAppListeners() {
     const addressInput = document.getElementById('address-input');
     
-    // Stable Autocomplete for standard input
-    const { Autocomplete } = await google.maps.importLibrary("places");
-    autocomplete = new Autocomplete(addressInput, {
-        fields: ['formatted_address', 'geometry', 'name'],
-        types: ['geocode', 'establishment']
-    });
-
-    // Handle place selection from dropdown
-    autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (place.geometry) {
-            const defaultMode = document.getElementById('travel-mode').value;
-            locations.push({
-                name: place.formatted_address || place.name,
-                lat: place.geometry.location.lat(),
-                lng: place.geometry.location.lng(),
-                travelMode: defaultMode
-            });
-            addressInput.value = '';
-            saveToStorage();
-            updateUI();
-            recalculateAndRedraw();
-            showStatus(`Added participant location`, 'info');
-        }
-    });
-
     document.getElementById('add-location-btn').addEventListener('click', handleAddLocation);
     document.getElementById('current-location-btn').addEventListener('click', handleCurrentLocation);
     document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
     document.getElementById('search-poi-btn').addEventListener('click', handleSearchPois);
     document.getElementById('share-btn').addEventListener('click', handleShareMeetup);
     
-    // Toggle custom query input
     document.getElementById('poi-type').addEventListener('change', (e) => {
         const customContainer = document.getElementById('custom-poi-container');
         if (e.target.value === 'custom') {
@@ -100,45 +85,86 @@ async function initMap() {
         }
     });
 
-    // Update circle in real-time when radius changes
     document.getElementById('search-radius').addEventListener('input', recalculateAndRedraw);
     
     addressInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleAddLocation();
     });
 
-    // Initial theme check
     if (localStorage.getItem('meetway_theme') === 'dark') {
         document.body.classList.add('dark-mode');
     }
-
-    // Load from URL or Local Storage
-    const urlParams = new URLSearchParams(window.location.search);
-    const meetupData = urlParams.get('meetup');
-    if (meetupData) {
-        try {
-            locations = JSON.parse(atob(meetupData));
-            updateUI();
-            recalculateAndRedraw();
-            showStatus('Meetup plan loaded from link!', 'info');
-        } catch (e) {
-            loadFromStorage();
-        }
-    } else {
-        loadFromStorage();
-    }
 }
 
+(async () => {
+    const loaderScript = document.createElement('script');
+    loaderScript.src = `https://maps.googleapis.com/maps/api/js?key=%GOOGLE_MAPS_API_KEY%&libraries=places,marker&v=beta`;
+    loaderScript.async = true;
+    loaderScript.defer = true;
+    
+    loaderScript.onload = async () => {
+        setupAppListeners(); // Run once
+        await initMap(); // Initial map load
+        
+        // Initial data load
+        const urlParams = new URLSearchParams(window.location.search);
+        const meetupData = urlParams.get('meetup');
+        if (meetupData) {
+            try {
+                locations = JSON.parse(atob(meetupData));
+                updateUI();
+                recalculateAndRedraw();
+                showStatus('Meetup plan loaded from link!', 'info');
+            } catch (e) {
+                loadFromStorage();
+            }
+        } else {
+            loadFromStorage();
+        }
+    };
+    
+    document.head.appendChild(loaderScript);
+})();
+
 // --- PERSISTENCE & SHARING ---
-function toggleTheme() {
+async function toggleTheme() {
     const isDark = document.body.classList.toggle('dark-mode');
     localStorage.setItem('meetway_theme', isDark ? 'dark' : 'light');
     
-    // Update Google Maps theme dynamically
+    // Update Google Maps theme
+    // Note: colorScheme is initialization-only, so we must re-init the map
     if (map) {
-        map.setOptions({
-            colorScheme: isDark ? google.maps.ColorScheme.DARK : google.maps.ColorScheme.LIGHT
-        });
+        const currentCenter = map.getCenter();
+        const currentZoom = map.getZoom();
+        
+        await initMap(); // Re-initialize map with new theme
+        
+        // Restore view
+        if (map && currentCenter) {
+            map.setCenter(currentCenter);
+            map.setZoom(currentZoom);
+        }
+        
+        // Redraw markers and POIs
+        recalculateAndRedraw();
+        if (foundPois.length > 0) {
+            // Re-render markers for found POIs
+            const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+            foundPois.forEach((place, index) => {
+                const marker = new AdvancedMarkerElement({
+                    map: map,
+                    position: place.location,
+                    title: place.displayName ? (typeof place.displayName === 'string' ? place.displayName : place.displayName.text) : 'Location',
+                });
+                const icon = document.createElement('div');
+                icon.innerHTML = '📍';
+                icon.style.fontSize = '24px';
+                icon.style.filter = 'drop-shadow(0 2px 2px rgba(0,0,0,0.3))';
+                marker.content = icon;
+                marker.addListener('click', () => showPoiDetails(index));
+                poiMarkers.push(marker);
+            });
+        }
     }
     
     showStatus(`${isDark ? 'Dark' : 'Light'} mode enabled`, 'info');
