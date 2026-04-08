@@ -38,6 +38,8 @@ async function initMap() {
     // PlaceAutocompleteElement is part of the 'places' library
     await google.maps.importLibrary("places");
     
+    const isDark = localStorage.getItem('meetway_theme') === 'dark';
+    
     map = new Map(document.getElementById("map"), {
         zoom: 4,
         center: { lat: 1.3521, lng: 103.8198 }, // Default to Singapore for your context
@@ -46,7 +48,8 @@ async function initMap() {
         zoomControl: true,
         streetViewControl: false,
         mapTypeControl: false,
-        fullscreenControl: false
+        fullscreenControl: false,
+        colorScheme: isDark ? google.maps.ColorScheme.DARK : google.maps.ColorScheme.LIGHT
     });
     
     geocoder = new Geocoder();
@@ -130,6 +133,14 @@ async function initMap() {
 function toggleTheme() {
     const isDark = document.body.classList.toggle('dark-mode');
     localStorage.setItem('meetway_theme', isDark ? 'dark' : 'light');
+    
+    // Update Google Maps theme dynamically
+    if (map) {
+        map.setOptions({
+            colorScheme: isDark ? google.maps.ColorScheme.DARK : google.maps.ColorScheme.LIGHT
+        });
+    }
+    
     showStatus(`${isDark ? 'Dark' : 'Light'} mode enabled`, 'info');
 }
 
