@@ -727,6 +727,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('poi-details-panel').classList.remove('visible');
     });
 
+    document.getElementById('guides-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        showHowItWorks();
+    });
+    document.getElementById('about-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        showHowItWorks();
+    });
+
     document.getElementById('directions-btn').addEventListener('click', () => {
         if (!currentPoiDetails || locations.length === 0) return;
         const name = currentPoiDetails.displayName ? (typeof currentPoiDetails.displayName === 'string' ? currentPoiDetails.displayName : currentPoiDetails.displayName.text) : 'Location';
